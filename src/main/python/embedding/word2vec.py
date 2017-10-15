@@ -454,6 +454,10 @@ class Word2Vec(object):
         except AttributeError as e:
             raise AttributeError("Need to read analogy questions.")
 
+        if total == 0:
+            print("not evaluating analogy: all words are unknown")
+            return
+        
         start = 0
         while start < total:
             limit = start + 2500
