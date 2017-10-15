@@ -1,0 +1,20 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+
+task tokenizeFile(type:JavaExec) {
+    main = "de.hhu.mabre.languagetool.FileTokenizer"
+    classpath = sourceSets.main.runtimeClasspath
+    args languageCode, sentencesFile
+    maxHeapSize = "2048m"
+}
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.languagetool:languagetool-core:3.9'
+    compile 'org.languagetool:language-all:3.9'
+    testCompile 'junit:junit:3.8.2'
+}
