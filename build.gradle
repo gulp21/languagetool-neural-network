@@ -4,7 +4,14 @@ apply plugin: 'idea'
 task tokenizeFile(type:JavaExec) {
     main = "de.hhu.mabre.languagetool.FileTokenizer"
     classpath = sourceSets.main.runtimeClasspath
-    args languageCode, sentencesFile
+    args "${-> languageCode}", "${-> sentencesFile}"
+    maxHeapSize = "2048m"
+}
+
+task createNGramDatabase(type:JavaExec) {
+    main = "de.hhu.mabre.languagetool.NGramDatabaseCreator"
+    classpath = sourceSets.main.runtimeClasspath
+    args "${-> languageCode}", "${-> trainingFile}", "${-> validationFile}", "${-> token1}", "${-> token2}"
     maxHeapSize = "2048m"
 }
 

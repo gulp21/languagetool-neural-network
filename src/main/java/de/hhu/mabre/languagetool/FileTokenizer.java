@@ -26,11 +26,11 @@ public class FileTokenizer {
         String sentencesFile = args[1];
 
         String text = readText(sentencesFile);
-        String tokens = tokenize(languageCode, text);
+        String tokens = String.join(" ", tokenize(languageCode, text));
         createTokensFile(sentencesFile+"-tokens", tokens);
     }
 
-    private static String readText(String sentencesFile) {
+    static String readText(String sentencesFile) {
         System.out.println("Reading " + sentencesFile);
         String text = "";
         try {
@@ -50,11 +50,15 @@ public class FileTokenizer {
         }
     }
 
-    protected static String tokenize(String languageCode, String text) {
+    static List<String> tokenize(String languageCode, String text) {
         System.out.println("Tokenizing");
-        Language language = getLanguageForShortCode(languageCode);
-        Tokenizer tokenizer = language.getWordTokenizer();
+        Tokenizer tokenizer = getTokenizer(languageCode);
         List<String> tokenizedText = tokenizer.tokenize(text);
-        return tokenizedText.stream().filter(token -> !token.trim().isEmpty()).collect(Collectors.joining(" "));
+        return tokenizedText.stream().filter(token -> !token.trim().isEmpty()).collect(Collectors.toList());
+    }
+
+    private static Tokenizer getTokenizer(String languageCode) {
+        Language language = getLanguageForShortCode(languageCode);
+        return language.getWordTokenizer();
     }
 }
