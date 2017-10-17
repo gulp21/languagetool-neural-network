@@ -1,0 +1,92 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>Wordfiller</title>
+<script type="text/javascript" src="https://www.languagetool.org/js/jquery-1.7.0.min.js"></script>
+<script type="text/javascript" src="https://www.languagetool.org/online-check/tiny_mce/tiny_mce.js"></script>
+<script type="text/javascript" src="editor_plugin2.js"></script>
+<script type="text/javascript" src="setup.js"></script>
+<link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+
+<body>
+<form name="checkform" action="#" method="post">
+  <div>
+    <select name="lang" id="lang">
+      <option value="en-US">English</option>
+      <option value="de-DE" selected="selected">German</option>
+    </select>
+    <input type="submit" name="_action_checkText" value="Check Text" onClick="doit();return false;">
+    <div id="feedbackErrorMessage" style="color: red;"></div>
+  </div>
+  <h2>Using Machine Learning</h2>
+  <p>only neural network rules enabled (see below)</p>
+  <p id="checktextpara_wordfiller">
+    <textarea id="checktext_wordfiller" name="text" style="width: 100%" rows="10">
+     Wenn ich mit diesen Satz so ansehe, dann fallen mir einige Fehler auf. Ich bin noch langer Überlegung zu dem Schluss gekommen, dass ein allen Sätzen einige Fehler sind. Aber vielleicht können mir dem neuronalen Netz einige Fehler gefunden werden und da Leben kann immer nach weitergehen. In fielen Fällen funktioniert also das neuronale Netz um Allgemeinen gut, aber es vielen noch mehr Fehler auf, wenn es auf weitere Fälle trainiert würde. Meine Kommilitonen das hinten sind beeindruckt und wollen auch eine Einführung ein die Themen der künstlichen Intelligenz bekommen. Was müssen wie lernen, im das zu schaffen? Dafür brauchen wie viel Zeit.
+    </textarea>
+  </p>
+  <h2>Using original LanguageTool</h2>
+  <p>all rules enabled, including <a href="http://wiki.languagetool.org/finding-errors-using-n-gram-data">n-gram rules</a></p>
+  <p id="checktextpara">
+    <textarea id="checktext" name="text" style="width: 100%" rows="10">
+     Wenn ich mit diesen Satz so ansehe, dann fallen mir einige Fehler auf. Ich bin noch langer Überlegung zu dem Schluss gekommen, dass ein allen Sätzen einige Fehler sind. Aber vielleicht können mir dem neuronalen Netz einige Fehler gefunden werden und da Leben kann immer nach weitergehen. In fielen Fällen funktioniert also das neuronale Netz um Allgemeinen gut, aber es vielen noch mehr Fehler auf, wenn es auf weitere Fälle trainiert würde. Meine Kommilitonen das hinten sind beeindruckt und wollen auch eine Einführung ein die Themen der künstlichen Intelligenz bekommen. Was müssen wie lernen, im das zu schaffen? Dafür brauchen wie viel Zeit.
+    </textarea>
+  </p>
+</form>
+
+<!-- git grep -A4 NeuralNetworkRule | grep -E "subject|minScore" | sed "s/.*asList//" | sed "s/.*double //" | sed ':a;N;$!ba;s/;\n/ /g' | sed -E 's@", "|"\) minScore = |; // p=|, r=|, tp=|, tn=|, fp=|, fn=|, |\+@</td><td>@g' | sed 's@("@<tr><td>@' | sed 's@$@</td></tr>@' | grep -v "bad:" -->
+<!-- git grep -A1000 NeuralNetworkRule | grep getId -A1 | grep return | sed -E 's/.*"(.*)".*/\1/' | tr '\n' ',' -->
+<table>
+
+<tr><th>Token 1</th><th>Token 2</th><th title="Sensitivity of the rule: The suggestion must have a score of 'minimum score' and the other token a score less than −'minimum score'.">minimum score</th><th title="How many detected problems are problems?">Precision</th><th title="How many problems have been detected?">Recall</th><th>True Positives</th><th>True Negatives</th><th>False Positives</th><th>False Negatives</th><th>#Token 1 in validation set</th><th>#Token 2 in validation set</th><th>last update</th></tr>
+<tr><td>da</td><td>das</td><td> 1.50</td><td>0.992</td><td>0.251</td><td>502</td><td>1996</td><td>4</td><td>1498</td><td>1000</td><td>1000</td><td>2017-09-24</td></tr>
+<tr><td>dich</td><td>doch</td><td>1.00</td><td>0.991</td><td>0.563</td><td>449</td><td>794</td><td>4</td><td>349</td><td>48</td><td>750</td><td>2017-09-24</td></tr>
+<tr><td>die</td><td>dir</td><td>1.50</td><td>1.000</td><td>0.607</td><td>623</td><td>1027</td><td>0</td><td>404</td><td>1000</td><td>27</td><td>2017-10-08</td></tr>
+<tr><td>ein</td><td>in</td><td>3.50</td><td>0.990</td><td>0.236</td><td>472</td><td>1995</td><td>5</td><td>1528</td><td>1000</td><td>1000</td><td>2017-09-24</td></tr>
+<tr><td>fielen</td><td>vielen</td><td>0.50</td><td>0.994</td><td>0.715</td><td>805</td><td>1121</td><td>5</td><td>321</td><td>126</td><td>1000</td><td>2017-09-24</td></tr>
+<tr><td>ihm</td><td>im</td><td>1.25</td><td>0.992</td><td>0.828</td><td>1657</td><td>1986</td><td>14</td><td>343</td><td>1000</td><td>1000</td><td>2017-09-24</td></tr>
+<tr><td>im</td><td>um</td><td>2.50</td><td>0.992</td><td>0.533</td><td>1065</td><td>1991</td><td>9</td><td>935</td><td>1000</td><td>1000</td><td>2017-09-24</td></tr>
+<tr><td>mir</td><td>mit</td><td>1.50</td><td>0.994</td><td>0.658</td><td>775</td><td>1173</td><td>5</td><td>403</td><td>178</td><td>1000</td><td>2017-09-24</td></tr>
+<tr><td>nach</td><td>noch</td><td>1.75</td><td>0.990</td><td>0.504</td><td>1009</td><td>1990</td><td>10</td><td>991</td><td>1000</td><td>1000</td><td>2017-09-24</td></tr>
+<tr><td>seid</td><td>seit</td><td>0.50</td><td>1.000</td><td>0.845</td><td>854</td><td>1011</td><td>0</td><td>157</td><td>11</td><td>1000</td><td>2017-10-14</td></tr>
+<tr><td>wie</td><td>wir</td><td>1.50</td><td>0.992</td><td>0.707</td><td>1118</td><td>1573</td><td>9</td><td>464</td><td>1000</td><td>582</td><td>2017-09-24</td></tr>
+<tr><td>wir</td><td>wird</td><td>1.25</td><td>0.991</td><td>0.718</td><td>976</td><td>1351</td><td>9</td><td>384</td><td>360</td><td>1000</td><td>2017-10-08</td></tr>
+
+<tr><th>Token 1</th><th>Token 2</th><th title="Sensitivity of the rule: The suggestion must have a score of 'minimum score' and the other token a score less than −'minimum score'.">minimum score</th><th title="How many detected problems are problems?">Precision</th><th title="How many problems have been detected?">Recall</th><th>True Positives</th><th>True Negatives</th><th>False Positives</th><th>False Negatives</th><th>#Token 1 in validation set</th><th>#Token 2 in validation set</th><th>last update</th></tr>
+<tr><td>for</td><td>four</td><td>1.50</td><td>0.990</td><td>0.685</td><td>1370</td><td>1986</td><td>14</td><td>630</td><td>1000</td><td>1000</td><td>2017-10-14</td></tr>
+<tr><td>form</td><td>from</td><td>1.50</td><td>0.995</td><td>0.313</td><td>627</td><td>1997</td><td>3</td><td>1373</td><td>1000</td><td>1000</td><td>2017-09-24</td></tr>
+<tr><td>hour</td><td>our</td><td>0.50</td><td>1.000</td><td>0.789</td><td>397</td><td>503</td><td>0</td><td>106</td><td>170</td><td>333</td><td>2017-10-08</td></tr>
+<tr><td>know</td><td>now</td><td>0.75</td><td>0.991</td><td>0.919</td><td>1140</td><td>1231</td><td>10</td><td>101</td><td>241</td><td>1000</td><td>2017-10-14</td></tr>
+<tr><td>of</td><td>off</td><td>2.00</td><td>0.990</td><td>0.433</td><td>795</td><td>1826</td><td>8</td><td>1039</td><td>1000</td><td>834</td><td>2017-10-08</td></tr>
+<tr><td>than</td><td>then</td><td>1.25</td><td>0.992</td><td>0.802</td><td>1603</td><td>1987</td><td>13</td><td>397</td><td>1000</td><td>1000</td><td>2017-09-24</td></tr>
+<tr><td>their</td><td>there</td><td>0.50</td><td>0.994</td><td>0.940</td><td>1880</td><td>1989</td><td>11</td><td>120</td><td>1000</td><td>1000</td><td>2017-10-14</td></tr>
+<tr><td>to</td><td>too</td><td>1.00</td><td>0.992</td><td>0.844</td><td>1240</td><td>1459</td><td>10</td><td>229</td><td>1000</td><td>469</td><td>2017-09-24</td></tr>
+
+</table>
+
+<p>
+The neural network has been trained with data from <a href="http://wortschatz.uni-leipzig.de/en/download/">Projekt Deutscher Wortschatz</a>, licensed under <a href="http://creativecommons.org/licenses/by/4.0/">CC BY</a>.
+</p>
+
+<p>
+Computational support and infrastructure was provided by the Centre for Information and Media Technology (ZIM) at the University of Düsseldorf (Germany). 
+</p>
+
+<p>
+Kindly hosted by <a href="https://fscs.hhu.de">Fachschaft Informatik, University of Düsseldorf</a>
+</p>
+
+<p>
+The development of neural network rules for LanguageTool is a part of Markus Brenneis’ project work at the research group <a href="http://www.cs.hhu.de/en/research-groups/software-engineering-and-programming-languages.html">Software Engineering and Programming Languages</a>.
+</p>
+
+<p>
+<a href="https://languagetool.org/">LanguageTool</a> is freely available under the <a href="http://www.gnu.org/licenses/old-licenses/lgpl-2.1">LGPL 2.1</a> or later.
+</p>
+
+</body>
+
+</html>

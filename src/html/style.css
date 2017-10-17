@@ -1,0 +1,19 @@
+table {
+    border-collapse:collapse;
+}
+
+tr:nth-child(odd) {
+    background: #eeeeee;
+    
+}
+
+td, th {
+    padding: 5px;
+    text-align: center;
+}
+
+[title] {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: rgba(0,0,0,.5);
+}
