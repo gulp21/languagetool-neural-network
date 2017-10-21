@@ -31,8 +31,8 @@ function print_dataset_file_information {
 
 shuf $file_with_sentences > $file_shuffled
 
-grep $subject1_regexp $file_shuffled > $tmp_file_subject1
-grep $subject2_regexp $file_shuffled > $tmp_file_subject2
+grep $subject1_regexp $file_shuffled | head -n200000 > $tmp_file_subject1
+grep $subject2_regexp $file_shuffled | head -n200000 > $tmp_file_subject2
 cat $tmp_file_subject1 $tmp_file_subject2 | sort -u | shuf > $tmp_file_dataset
 dataset_lines=`wc -l < $tmp_file_dataset`
 validation_set_lines=$((dataset_lines*validation_percent/100))
