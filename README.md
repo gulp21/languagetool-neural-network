@@ -10,8 +10,8 @@ In case everything is already set up:
 ./create_training_files.bash training-corpus.txt to too
 ./create_classifier.bash dictionary.txt final_embeddings.txt /tmp/to_too_training.py /tmp/to_too_validate.py .
 # copy W_fc1.txt and b_fc1.txt to resources
-# create Java class for rule and add to $Language.java
-# calibrate using NeuralNetworkRuleEvaluator language-code RULE_ID corpus1.xml
+# edit nuralnetwork/confusion_sets.txt
+# calibrate using NeuralNetworkRuleEvaluator language-code word2vec-dir RULE_ID corpus1.xml
 ```
 
 # Prerequisites
@@ -67,7 +67,7 @@ You now have a file `training-corpus.txt` containing lots of sentences.
 
 ### Tokenizing the corpus
 
-You have to tokenize the traiing corpus with LanguageTool. `cd` to `languagetool-neural-network`. As tokenizing 1,000,000 sentences might be too much for your memory, you may decide to train the language model with fewer sentences, let’s say 300,000.
+You have to tokenize the training corpus with LanguageTool. `cd` to `languagetool-neural-network`. As tokenizing 1,000,000 sentences might be too much for your memory, you may decide to train the language model with fewer sentences, let’s say 300,000.
 
 ```bash
 shuf training-corpus.txt | head -n300000 > language-model-corpus.txt
@@ -113,7 +113,7 @@ If you get an error about `word2vec_ops.so`, try compiling with `-D_GLIBCXX_USE_
 
 The process can take a while (on my notebook I have a rate of ~7,000 words/sec; on my university’s high performance cluster ~28,000 words/sec and a total runtime of ~30 minutes). You should see that the loss value decreases over time.
 
-When the process has finished, you have files `dictionary.txt` (~1 MB) and `final_embeddings.txt` (~80 MB). Move them to `languagetool-language-modules/LANG/src/main/resources/org/languagetool/resource/LANG/neuralnetwork/`.
+When the process has finished, you have files `dictionary.txt` (~1 MB) and `final_embeddings.txt` (~80 MB). Open the directory containing the existing word2vec models (or create a new directory, if you haven’t download models of other languages), create a sub-directory `LANG` (e. g. `en`) and move the two created to that directory.
 
 #### What just happened?
 
@@ -121,9 +121,22 @@ The language model trained here is a 64 dimensional [word embedding](http://cola
 
 The `--train_data` parameter is required, but not important for us. If you are curious, have a look at [Analogical Reasoning](https://www.tensorflow.org/tutorials/word2vec#evaluating_embeddings_analogical_reasoning).
 
-### Creating XxxNeuralNetworkRule
 
-All neural network rules inherit from language-specific XxxNeuralNetworkRule class, which defines the error messages and the path to the language model. Copy `languagetool-language-modules/en/src/main/java/org/languagetool/rules/en/neuralnetwork/EnglishNeuralNetworkRule.java`, translate the messages, change the file paths, and of course class name and package declaration.
+### Adding methods to Language.java
+
+Open the java class for your language and add the following methods:
+
+```java
+@Override
+public synchronized Word2VecModel getWord2VecModel(File indexDir) throws IOException {
+  return new Word2VecModel(indexDir + File.separator + getShortCode());
+}
+
+@Override
+public List<Rule> getRelevantWord2VecModelRules(ResourceBundle messages, Word2VecModel word2vecModel) throws IOException {
+  return NeuralNetworkRuleCreator.createRules(messages, this, word2vecModel);
+}
+```
 
 
 ## Adding support for a new confusion pair
@@ -156,7 +169,7 @@ Depending on whether a CUDA capable GPU is available and how many training sampl
 
 In the end of the training process, the neural network is validated with the validation set. The figures after “incorrect” should be near zero, and “unclassified” should not be bigger than “correct”, otherwise the learned network is probably unusable. (NB: The validation does not use the same algorithm as the `NeuralNetworkRule` in LanguageTool, but it still is a good hint whether the network learned something sensible or not.)
 
-You now have the files `W_fc1.txt` and `b_fc1.txt` in your current working directory. Move them to `languagetool-language-modules/LANG/src/main/resources/org/languagetool/resource/LANG/neuralnetwork`. Don’t forget to include a `LICENSE` file if needed.
+You now have the files `W_fc1.txt` and `b_fc1.txt` in your current working directory. Move them to `languagetool-language-modules/LANG/src/main/resources/org/languagetool/resource/LANG/neuralnetwork/TOKEN1_TOKEN2`. Don’t forget to include a `LICENSE` file if needed.
 
 #### What just happened?
 
@@ -164,20 +177,20 @@ Let’s take the to/too pair as an example. You’ve trained a single-layer [neu
 
 ### Adding the rule
 
-Note: This process might be simplified in the future by using a text file similar to what the n-gram rules use.
+Add a new line to `languagetool-language-modules/LANG/src/main/resources/org/languagetool/resource/LANG/neuralnetwork/confusion_sets.txt` which looks like this:
 
-Add a new class `Token1Token2Rule` to `languagetool-language-modules/LANG/src/main/java/org/languagetool/rules/LANG/neuralnetwork` inheriting from `LANGNeuralNetworkRule`; take `ForFourRule` as an example. The list `subjects` must contain the two tokens in the same order as given to `create_training_files`. (I always give them in alphabetical order to avoid confusion.) Make sure that the file paths are correct and the ID is unique.
+```
+to; too; 0.5
+```
 
-Now open `languagetool-language-modules/LANG/src/main/java/org/languagetool/language/LANG.java` and add `Token1Token2Rule` to `getRelevantRules`.
-
-If you build LanguageTool now, the rule should work, but might cause more false alarms than necessary.
+If you build LanguageTool now, the rule, which has the id `LANG_TO_VS_TOO_NEURALNETWORK`, should work, if you have specified the word2vec directory in the settings. The new rule might cause more false alarms than necessary, though.
 
 ```bash
 ./build.sh languagetool-standalone package -DskipTests
 java -jar languagetool-standalone/target/LanguageTool-3.9-SNAPSHOT/LanguageTool-3.9-SNAPSHOT/languagetool.jar
 ```
 
-Now you have to tweak the `minScore` property of the new rule. Open `org.languagetool.dev.bigdata.NeuralNetworkRuleEvaluator` in your IDE and run the main method with the arguments `language-code RULE_ID corpus1.xml corpus2.txt etc.`; a corpus can be a Wikipedia XML file or some plain text file and any number of corpora may be given. Do not use the same corpus you used for training! The output will look like this:
+Now you have to tweak the sensitivity of the rule, which currently is 0.5. Open `org.languagetool.dev.bigdata.NeuralNetworkRuleEvaluator` in your IDE and run the main method with the arguments `language-code word2vec-directory RULE_ID corpus1.xml corpus2.txt etc.`; a corpus can be a Wikipedia XML file or some plain text file and any number of corpora may be given. Do not use the same corpus you used for training! The output will look like this:
 
 ```
 Evaluation results for to/too with 1466 sentences as of Sun Oct 15 21:15:16 CEST 2017:
@@ -228,10 +241,8 @@ Certainty: 4.00 - 0 false positives, 1136 false negatives, 330 true positives, 1
 to; too; 4.00; # p=1.000, r=0.225, tp=330, tn=1466, fp=0, fn=1136, 1000+466, 2017-10-15
 ```
 
-The p value is the precision, which tells you how often a detected error was an actual error (i. e. 1−p is the probability for false alarms). The r value is the recall, which tells you how often the rule could find an error. As a rule of thumb, the precision should be greater than 0.99, or 0.995 for common words. Recall should be greater than 0.5, otherwise the rule won’t detect many errors. If you have chosen a good certainty level (which is the same as the score I mentioned earlier), you can put it into the rule class:
+The p value is the precision, which tells you how often a detected error was an actual error (i. e. 1−p is the probability for false alarms). The r value is the recall, which tells you how often the rule could find an error. As a rule of thumb, the precision should be greater than 0.99, or 0.995 for common words. Recall should be greater than 0.5, otherwise the rule won’t detect many errors. If you have chosen a good certainty level (which is the same as the score I mentioned earlier), you can update `neuralnetwork/pconfusion_sets.txt`:
 
-```java
-private double minScore = 1.00; // p=0.992, r=0.844, tp=1237, tn=1456, fp=10, fn=229, 1000+466, 2017-10-15
 ```
-
-Optionally, you may now add example sentences using `addExamplePair`.
+to; too; 1.00 # p=0.992, r=0.844, tp=1237, tn=1456, fp=10, fn=229, 1000+466, 2017-10-15
+```
