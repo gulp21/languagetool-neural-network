@@ -1,0 +1,73 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>Wordfiller</title>
+<script type="text/javascript" src="https://www.languagetool.org/js/jquery-1.7.0.min.js"></script>
+<script type="text/javascript" src="https://www.languagetool.org/online-check/tiny_mce/tiny_mce.js"></script>
+<script type="text/javascript" src="editor_plugin2.js"></script>
+<script type="text/javascript" src="setup.js"></script>
+<link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+
+<body>
+<form name="checkform" action="#" method="post">
+  <div>
+    <select name="lang" id="lang">
+      <option value="en-US">English</option>
+      <option value="de-DE" selected="selected">German</option>
+      <option value="pt-PT">Portuguese</option>
+    </select>
+    <input type="submit" name="_action_checkText" value="Check Text" onClick="doit();return false;">
+    <div id="feedbackErrorMessage" style="color: red;"></div>
+  </div>
+  <h2>Using Machine Learning</h2>
+  <p>only neural network rules enabled (see below)</p>
+  <p>
+  <p>
+  supported confusion sets for
+  <a href="https://github.com/gulp21/languagetool/blob/neuralnetworkrule/languagetool-language-modules/en/src/main/resources/org/languagetool/resource/en/neuralnetwork/confusion_sets.txt">English</a>,
+  <a href="https://github.com/gulp21/languagetool/blob/neuralnetworkrule/languagetool-language-modules/de/src/main/resources/org/languagetool/resource/de/neuralnetwork/confusion_sets.txt">German</a>,
+  <a href="https://github.com/gulp21/languagetool/blob/neuralnetworkrule/languagetool-language-modules/pt/src/main/resources/org/languagetool/resource/pt/neuralnetwork/confusion_sets.txt">Portuguese</a>
+  </p>
+  <p id="checktextpara_wordfiller">
+    <textarea id="checktext_wordfiller" name="text" style="width: 100%" rows="10">
+Ich glaube, das der Spieleabend gut besucht sein wir, da wir fiel Werbung gemacht haben. Was machst du den da? Ab wann seit ihr in der Uni? Ich bin gerade ihm Copyshop.
+    </textarea>
+  </p>
+  <h2>Using original LanguageTool</h2>
+  <p>all rules enabled, including <a href="http://wiki.languagetool.org/finding-errors-using-n-gram-data">n-gram rules</a></p>
+  <p id="checktextpara">
+    <textarea id="checktext" name="text" style="width: 100%" rows="10">
+Ich glaube, das der Spieleabend gut besucht sein wir, da wir fiel Werbung gemacht haben. Was machst du den da? Ab wann seit ihr in der Uni? Ich bin gerade ihm Copyshop.
+    </textarea>
+  </p>
+</form>
+
+<!-- grep ";" confusion_sets.txt | grep -Ev "^#" | sed "s/|[^;]*//g" | sed "s/ //" | awk -F\; '{print "DE_"$1"_VS_"$2"_NEURALNETWORK"}' | tr '\n' ',' -->
+
+
+<p>
+The neural network has been trained with data from <a href="http://wortschatz.uni-leipzig.de/en/download/">Projekt Deutscher Wortschatz</a>, licensed under <a href="http://creativecommons.org/licenses/by/4.0/">CC BY</a>.
+</p>
+
+<p>
+Computational support and infrastructure was provided by the Centre for Information and Media Technology (ZIM) at the University of Düsseldorf (Germany). 
+</p>
+
+<p>
+Kindly hosted by <a href="https://fscs.hhu.de">Fachschaft Informatik, University of Düsseldorf</a>
+</p>
+
+<p>
+The development of neural network rules for LanguageTool is a part of Markus Brenneis’ project work at the research group <a href="http://www.cs.hhu.de/en/research-groups/software-engineering-and-programming-languages.html">Software Engineering and Programming Languages</a>.
+</p>
+
+<p>
+<a href="https://languagetool.org/">LanguageTool</a> is freely available under the <a href="http://www.gnu.org/licenses/old-licenses/lgpl-2.1">LGPL 2.1</a> or later.
+</p>
+
+</body>
+
+</html>

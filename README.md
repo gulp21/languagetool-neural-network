@@ -183,7 +183,7 @@ Add a new line to `languagetool-language-modules/LANG/src/main/resources/org/lan
 to; too; 0.5
 ```
 
-If you build LanguageTool now, the rule, which has the id `LANG_TO_VS_TOO_NEURALNETWORK`, should work, if you have specified the word2vec directory in the settings. The new rule might cause more false alarms than necessary, though.
+If you build LanguageTool now, the rule, which has the id `LANG_to_VS_too_NEURALNETWORK`, should work, if you have specified the word2vec directory in the settings. The new rule might cause more false alarms than necessary, though.
 
 ```bash
 ./build.sh languagetool-standalone package -DskipTests
