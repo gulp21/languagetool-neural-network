@@ -148,12 +148,10 @@ class NeuralNetwork:
               self.word4: [ngram[4]],
               self.y_: [[0, 0]]}
         scores = self.y.eval(fd)[0]
-        classification = np.argmax(scores)
-        score_delta = np.abs(scores[0] - scores[1])
-        if np.max(scores) < .5 or score_delta < 1.0:
-            return -1
+        if np.max(scores) > .5 and np.min(scores) < -.5:
+            return np.argmax(scores)
         else:
-            return classification
+            return -1
 
     def validate(self, test_data_file):
         db_validate = self.get_db(test_data_file, oversample=False)

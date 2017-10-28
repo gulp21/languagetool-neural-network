@@ -167,7 +167,7 @@ Now you have two files, `/tmp/to_too_training.py` and `/tmp/to_too_validate.py`,
 
 Depending on whether a CUDA capable GPU is available and how many training samples there are, this process takes several minutes. Accuracy should get closer to 1 over time.
 
-In the end of the training process, the neural network is validated with the validation set. The figures after “incorrect” should be near zero, and “unclassified” should not be bigger than “correct”, otherwise the learned network is probably unusable. (NB: The validation does not use the same algorithm as the `NeuralNetworkRule` in LanguageTool, but it still is a good hint whether the network learned something sensible or not.)
+In the end of the training process, the neural network is validated with the validation set. The figures after “incorrect” should be near zero, and “unclassified” should not be bigger than “correct”, otherwise the learned network is probably unusable.
 
 You now have the files `W_fc1.txt` and `b_fc1.txt` in your current working directory. Move them to `languagetool-language-modules/LANG/src/main/resources/org/languagetool/resource/LANG/neuralnetwork/TOKEN1_TOKEN2`. Don’t forget to include a `LICENSE` file if needed.
 
