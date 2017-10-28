@@ -31,8 +31,8 @@ public class NGramDatabaseCreator {
         String token1 = args[3];
         String token2 = args[4];
 
-        writeDatabase(databaseFromSentences(languageCode, readText(trainingFilename), token1, token2),trainingFilename+".py");
-        writeDatabase(databaseFromSentences(languageCode, readText(validationFilename), token1, token2), validationFilename+".py");
+        writeDatabase(databaseFromSentences(languageCode, readText(trainingFilename), token1, token2, UNDERSAMPLE),trainingFilename+".py");
+        writeDatabase(databaseFromSentences(languageCode, readText(validationFilename), token1, token2, NONE), validationFilename+".py");
     }
 
     private static void writeDatabase(PythonDict pythonDict, String filename) {
@@ -44,9 +44,9 @@ public class NGramDatabaseCreator {
         }
     }
 
-    static PythonDict databaseFromSentences(String languageCode, String sentences, String token1, String token2) {
+    static PythonDict databaseFromSentences(String languageCode, String sentences, String token1, String token2, SamplingMode samplingMode) {
         List<String> tokens = tokenize(languageCode, sentences);
-        return createDatabase(tokens, token1, token2, UNDERSAMPLE);
+        return createDatabase(tokens, token1, token2, samplingMode);
     }
 
     static PythonDict createDatabase(List<String> tokens, String token1, String token2, SamplingMode samplingMode) {
