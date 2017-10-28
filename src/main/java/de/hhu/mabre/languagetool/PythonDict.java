@@ -16,6 +16,10 @@ class PythonDict {
         groundTruths.add(groundTruth);
     }
 
+    void addAll(List<NGram> nGrams, int groundTruth) {
+        nGrams.forEach(nGram -> add(nGram, groundTruth));
+    }
+
     @Override
     public String toString() {
         String dict;

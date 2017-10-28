@@ -9,6 +9,8 @@ import java.util.List;
 
 import static de.hhu.mabre.languagetool.FileTokenizer.readText;
 import static de.hhu.mabre.languagetool.FileTokenizer.tokenize;
+import static de.hhu.mabre.languagetool.SamplingMode.NONE;
+import static de.hhu.mabre.languagetool.SamplingMode.UNDERSAMPLE;
 
 /**
  * Create a 5-gram database as input for the neural network.
@@ -44,20 +46,46 @@ public class NGramDatabaseCreator {
 
     static PythonDict databaseFromSentences(String languageCode, String sentences, String token1, String token2) {
         List<String> tokens = tokenize(languageCode, sentences);
-        return createDatabase(tokens, token1, token2);
+        return createDatabase(tokens, token1, token2, UNDERSAMPLE);
     }
 
-    static PythonDict createDatabase(List<String> tokens, String token1, String token2) {
+    static PythonDict createDatabase(List<String> tokens, String token1, String token2, SamplingMode samplingMode) {
         ArrayList<NGram> token1NGrams = getRelevantNGrams(tokens, token1);
         ArrayList<NGram> token2NGrams = getRelevantNGrams(tokens, token2);
 
-        int numberOfSamples = Math.min(token1NGrams.size(), token2NGrams.size());
-        System.out.println("undersampling to " + numberOfSamples);
+        int token1size = token1NGrams.size();
+        int token2Count = token2NGrams.size();
 
         PythonDict db = new PythonDict();
-        token1NGrams.stream().limit(numberOfSamples).forEach(nGram -> db.add(nGram, 0));
-        token2NGrams.stream().limit(numberOfSamples).forEach(nGram -> db.add(nGram, 1));
+
+        if(samplingMode == NONE) {
+            db.addAll(token1NGrams, 0);
+            db.addAll(token2NGrams, 1);
+            return db;
+        }
+
+        int numberOfSamples = getNumberOfSamples(token1size, token2Count, samplingMode);
+        System.out.println("sampling to " + numberOfSamples);
+
+        for (int i = 0; i < numberOfSamples; i++) {
+            db.add(token1NGrams.get(i % token1size), 0);
+            db.add(token2NGrams.get(i % token2Count), 1);
+        }
         return db;
+    }
+
+    private static int getNumberOfSamples(int token1size, int token2Count, SamplingMode samplingMode) {
+        switch (samplingMode) {
+            case NONE:
+                throw new UnsupportedOperationException("NONE not supported here.");
+            case UNDERSAMPLE:
+                return Math.min(token1size, token2Count);
+            case OVERSAMPLE:
+                return Math.max(token1size, token2Count);
+            case MODERATE_OVERSAMPLE:
+                return Math.min(Math.min(2*token1size, 2*token2Count), Math.max(token1size, token2Count));
+        }
+        return -1;
     }
 
     static ArrayList<NGram> getRelevantNGrams(List<String> tokens, String token) {

@@ -103,3 +103,21 @@ function doit() {
   setTimeout(() => tinymce.get('checktext_wordfiller').execCommand("mceWritingImprovementTool", langCode), 250);
   tinymce.get('checktext').execCommand("mceWritingImprovementTool", langCode);
 }
+
+const exampleTexts = {
+  "de-DE": "Ich glaube, das der Spieleabend gut besucht sein wir, da wir fiel Werbung gemacht haben. Was machst du den da? Ab wann seit ihr in der Uni? Ich bin gerade ihm Copyshop.",
+  "en-US": "I didn’t no the answer, but he person told me the correct answer. We want too go to the museum no, but Peter isn’t here yet. Sara past the test yesterday. I lent him same money. Please turn of your phones.",
+  "pt-PT": "Isso junta quanto? Sem dívida, algo inesperado ocorreu. Posso por a mesa? Filipe quer ganhar missa muscular. Eles são parceiros de lança há mais de 60 anos. Chorei a norte toda. Falei pôr telefone. [from tatoeba.org]"
+}
+
+function updateExampleText() {
+  const editor_wordfiller = tinymce.get('checktext_wordfiller');
+  const editor_lt = tinymce.get('checktext');
+  chosenLanguage = document.getElementById("lang").value;
+  editor_wordfiller.setContent(exampleTexts[chosenLanguage]);
+  editor_lt.setContent(exampleTexts[chosenLanguage]);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("lang").onchange = updateExampleText;
+},false);
