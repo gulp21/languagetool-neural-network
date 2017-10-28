@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import codecs
+import math
 import sys
 from ast import literal_eval
 
@@ -118,7 +119,7 @@ class NeuralNetwork:
         return batch
 
     def train(self):
-        steps = int(self._TRAINING_SAMPLES / self.batch_size)
+        steps = math.ceil(self._TRAINING_SAMPLES / self.batch_size)
         print("Steps: %d, %d steps in %d epochs" % (steps * self.epochs, steps, self.epochs))
         for e in range(self.epochs):
             for i in range(steps):
