@@ -20,8 +20,26 @@ public class NGramDatabaseCreatorTest extends TestCase {
     }
 
     public void testCreateDatabase() {
-        PythonDict db = createDatabase(Arrays.asList("c", "b", "c", "d", "e", "f", "g", "h", "c", "c", "i"), "c", "f");
+        PythonDict db = createDatabase(Arrays.asList("c", "b", "c", "d", "e", "f", "g", "h", "c", "c", "i"), "c", "f", SamplingMode.UNDERSAMPLE);
         String expectedDb = "{'ngrams':[['c','b','c','d','e'],['d','e','f','g','h']],\n'groundtruths':[[1,0],[0,1]]}";
+        assertEquals(expectedDb, db.toString());
+    }
+
+    public void testCreateDatabaseModerateOversample() {
+        PythonDict db = createDatabase(Arrays.asList("c", "b", "c", "d", "e", "f", "g", "h", "c", "c", "i", "j"), "c", "f", SamplingMode.MODERATE_OVERSAMPLE);
+        String expectedDb = "{'ngrams':[['c','b','c','d','e'],['d','e','f','g','h'],['g','h','c','c','i'],['d','e','f','g','h']],\n'groundtruths':[[1,0],[0,1],[1,0],[0,1]]}";
+        assertEquals(expectedDb, db.toString());
+    }
+
+    public void testCreateDatabaseOversample() {
+        PythonDict db = createDatabase(Arrays.asList("c", "b", "c", "d", "e", "f", "g", "h", "c", "c", "i", "j"), "c", "f", SamplingMode.OVERSAMPLE);
+        String expectedDb = "{'ngrams':[['c','b','c','d','e'],['d','e','f','g','h'],['g','h','c','c','i'],['d','e','f','g','h'],['h','c','c','i','j'],['d','e','f','g','h']],\n'groundtruths':[[1,0],[0,1],[1,0],[0,1],[1,0],[0,1]]}";
+        assertEquals(expectedDb, db.toString());
+    }
+
+    public void testCreateDatabaseNoSampling() {
+        PythonDict db = createDatabase(Arrays.asList("c", "b", "c", "d", "e", "f", "g", "h", "c", "c", "i", "j"), "c", "f", SamplingMode.NONE);
+        String expectedDb = "{'ngrams':[['c','b','c','d','e'],['g','h','c','c','i'],['h','c','c','i','j'],['d','e','f','g','h']],\n'groundtruths':[[1,0],[1,0],[1,0],[0,1]]}";
         assertEquals(expectedDb, db.toString());
     }
 
