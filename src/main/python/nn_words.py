@@ -13,7 +13,7 @@ import nn
 
 class NeuralNetwork:
     def __init__(self, dictionary_path, embedding_path, training_data_file,
-                 batch_size=1000, epochs=3000, use_flex_hidden_layer=False, num_inputs=4, num_outputs=2):
+                 batch_size=1000, epochs=500, use_flex_hidden_layer=True, num_inputs=4, num_outputs=2):
         print(locals())
 
         self.use_flex_hidden_layer = use_flex_hidden_layer
@@ -48,12 +48,12 @@ class NeuralNetwork:
 
         if self.use_flex_hidden_layer:
             with tf.name_scope('flex_layer'):
-                self.W_f = nn.weight_variable([self._num_inputs * self._input_size, self._num_inputs * self._input_size])
-                self.b_f = nn.bias_variable([self._num_inputs * self._input_size])
+                self.W_f = nn.weight_variable([self._num_inputs * self._input_size, self._num_inputs * 8])
+                self.b_f = nn.bias_variable([self._num_inputs * 8])
                 flex = tf.nn.relu(tf.matmul(x, self.W_f) + self.b_f)
 
         with tf.name_scope('readout_layer'):
-            self.W_fc1 = nn.weight_variable([self._num_inputs * self._input_size, self._num_outputs])
+            self.W_fc1 = nn.weight_variable([self._num_inputs * 8, self._num_outputs])
             self.b_fc1 = nn.bias_variable([self._num_outputs])
             if self.use_flex_hidden_layer:
                 self.y = tf.matmul(flex, self.W_fc1) + self.b_fc1
@@ -138,8 +138,8 @@ class NeuralNetwork:
         np.savetxt(output_path + "/W_fc1.txt", self.W_fc1.eval())
         np.savetxt(output_path + "/b_fc1.txt", self.b_fc1.eval())
         if self.use_flex_hidden_layer:
-            np.savetxt(output_path + "/W_f.txt", self.b_f.eval())
-            np.savetxt(output_path + "/b_f.txt", self.W_f.eval())
+            np.savetxt(output_path + "/b_f.txt", self.b_f.eval())
+            np.savetxt(output_path + "/W_f.txt", self.W_f.eval())
 
     def get_suggestion_5(self, ngram):
         fd = {self.word1: [ngram[0]],
