@@ -159,16 +159,26 @@ class NeuralNetwork:
         correct = [0, 0]
         incorrect = [0, 0]
         unclassified = [0, 0]
+        tp = 0
+        fp = 0
+        tn = 0
+        fn = 0
 
         for i in range(len(db_validate["groundtruths"])):
             suggestion = self.get_suggestion_5(db_validate["ngrams"][i])
             ground_truth = np.argmax(db_validate["groundtruths"][i])
             if suggestion == -1:
                 unclassified[ground_truth] = unclassified[ground_truth] + 1
+                tn = tn + 1
+                fn = fn + 1
             elif suggestion == ground_truth:
                 correct[ground_truth] = correct[ground_truth] + 1
+                tp = tp + 1
+                tn = tn + 1
             else:
                 incorrect[ground_truth] = incorrect[ground_truth] + 1
+                fp = fp + 1
+                fn = fn + 1
 
         accuracy = list(map(lambda c, i: c/(c+i), correct, incorrect))
         total_accuracy = list(map(lambda c, i, u: c/(c+i+u), correct, incorrect, unclassified))
@@ -178,6 +188,13 @@ class NeuralNetwork:
         print("accuracy:", accuracy)
         print("unclassified:", unclassified)
         print("total accuracy:", total_accuracy)
+
+        print("tp", tp)
+        print("tn", tn)
+        print("fp", fp)
+        print("fn", fn)
+        print("precision:", float(tp)/(tp+fp))
+        print("recall:", float(tp)/(tp+fn))
 
 
 def main():
