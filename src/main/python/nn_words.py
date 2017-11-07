@@ -37,11 +37,10 @@ class NeuralNetwork:
 
     def setup_net(self):
         with tf.name_scope('input'):
-            self.word1 = tf.placeholder(tf.float32, [None, self._input_size])  # TODO make this an array
-            self.word2 = tf.placeholder(tf.float32, [None, self._input_size])
-            self.word3 = tf.placeholder(tf.float32, [None, self._input_size])
-            self.word4 = tf.placeholder(tf.float32, [None, self._input_size])
-            x = tf.concat([self.word1, self.word2, self.word3, self.word4], 1)
+            self.words = []
+            for i in range(self._num_inputs):
+                self.words.append(tf.placeholder(tf.float32, [None, self._input_size]))
+            x = tf.concat(self.words, 1)
 
         with tf.name_scope('ground-truth'):
             self.y_ = tf.placeholder(tf.float32, shape=[None, self._num_outputs])
@@ -98,10 +97,7 @@ class NeuralNetwork:
         end_index = (self._current_batch_number + 1) * self.batch_size
         batch = dict()
         ngrams = self._db["ngrams"][start_index:end_index]
-        batch[self.word1] = ngrams[:, 0]
-        batch[self.word2] = ngrams[:, 1]
-        batch[self.word3] = ngrams[:, 3]
-        batch[self.word4] = ngrams[:, 4]
+        self.assign_4gram_to_batch(batch, ngrams)
         batch[self.y_] = self._db["groundtruths"][start_index:end_index]
         self._current_batch_number = self._current_batch_number + 1
         # print("d" + str(len(batch[self.word1])))
@@ -110,13 +106,20 @@ class NeuralNetwork:
     def get_all_training_data(self):
         batch = dict()
         ngrams = self._db["ngrams"][:]
-        batch[self.word1] = ngrams[:, 0]
-        batch[self.word2] = ngrams[:, 1]
-        batch[self.word3] = ngrams[:, 3]
-        batch[self.word4] = ngrams[:, 4]
+        self.assign_4gram_to_batch(batch, ngrams)
         batch[self.y_] = self._db["groundtruths"][:]
         # print("d" + str(len(batch[self.word1])))
         return batch
+
+    def assign_4gram_to_batch(self, batch, ngrams):
+        if self._num_inputs == 2:
+            batch[self.words[0]] = ngrams[:, 1]
+            batch[self.words[1]] = ngrams[:, 3]
+        elif self._num_inputs == 4:
+            batch[self.words[0]] = ngrams[:, 0]
+            batch[self.words[1]] = ngrams[:, 1]
+            batch[self.words[2]] = ngrams[:, 3]
+            batch[self.words[3]] = ngrams[:, 4]
 
     def train(self):
         steps = math.ceil(self._TRAINING_SAMPLES / self.batch_size)
@@ -141,12 +144,17 @@ class NeuralNetwork:
             np.savetxt(output_path + "/b_f.txt", self.b_f.eval())
             np.savetxt(output_path + "/W_f.txt", self.W_f.eval())
 
-    def get_suggestion_5(self, ngram):
-        fd = {self.word1: [ngram[0]],
-              self.word2: [ngram[1]],
-              self.word3: [ngram[3]],
-              self.word4: [ngram[4]],
-              self.y_: [[0, 0]]}
+    def get_suggestion(self, ngram):
+        if self._num_inputs == 4:
+            fd = {self.words[0]: [ngram[0]],
+                  self.words[1]: [ngram[1]],
+                  self.words[2]: [ngram[3]],
+                  self.words[3]: [ngram[4]],
+                  self.y_: [[0, 0]]}
+        elif self._num_inputs == 2:
+            fd = {self.words[0]: [ngram[1]],
+                  self.words[1]: [ngram[3]],
+                  self.y_: [[0, 0]]}
         scores = self.y.eval(fd)[0]
         if np.max(scores) > .5 and np.min(scores) < -.5:
             return np.argmax(scores)
@@ -161,7 +169,7 @@ class NeuralNetwork:
         unclassified = [0, 0]
 
         for i in range(len(db_validate["groundtruths"])):
-            suggestion = self.get_suggestion_5(db_validate["ngrams"][i])
+            suggestion = self.get_suggestion(db_validate["ngrams"][i])
             ground_truth = np.argmax(db_validate["groundtruths"][i])
             if suggestion == -1:
                 unclassified[ground_truth] = unclassified[ground_truth] + 1
