@@ -13,10 +13,11 @@ import nn
 
 class NeuralNetwork:
     def __init__(self, dictionary_path, embedding_path, training_data_file,
-                 batch_size=1000, epochs=500, use_flex_hidden_layer=True, num_inputs=4, num_outputs=2):
+                 batch_size=1000, epochs=3000, use_hidden_layer=False, num_inputs=4, num_outputs=2):
         print(locals())
 
-        self.use_flex_hidden_layer = use_flex_hidden_layer
+        self.use_hidden_layer = use_hidden_layer
+        self.hidden_layer_size = 8
         self.batch_size = batch_size
         self.epochs = epochs
 
@@ -45,18 +46,20 @@ class NeuralNetwork:
         with tf.name_scope('ground-truth'):
             self.y_ = tf.placeholder(tf.float32, shape=[None, self._num_outputs])
 
-        if self.use_flex_hidden_layer:
-            with tf.name_scope('flex_layer'):
-                self.W_f = nn.weight_variable([self._num_inputs * self._input_size, self._num_inputs * 8])
-                self.b_f = nn.bias_variable([self._num_inputs * 8])
-                flex = tf.nn.relu(tf.matmul(x, self.W_f) + self.b_f)
+        if self.use_hidden_layer:
+            with tf.name_scope('hidden_layer'):
+                self.W_fc1 = nn.weight_variable([self._num_inputs * self._input_size, self._num_inputs * self.hidden_layer_size])
+                self.b_fc1 = nn.bias_variable([self._num_inputs * self.hidden_layer_size])
+                hidden_layer = tf.nn.relu(tf.matmul(x, self.W_fc1) + self.b_fc1)
 
         with tf.name_scope('readout_layer'):
-            self.W_fc1 = nn.weight_variable([self._num_inputs * 8, self._num_outputs])
-            self.b_fc1 = nn.bias_variable([self._num_outputs])
-            if self.use_flex_hidden_layer:
-                self.y = tf.matmul(flex, self.W_fc1) + self.b_fc1
+            if self.use_hidden_layer:
+                self.W_fc2 = nn.weight_variable([self._num_inputs * self.hidden_layer_size, self._num_outputs])
+                self.b_fc2 = nn.bias_variable([self._num_outputs])
+                self.y = tf.matmul(hidden_layer, self.W_fc2) + self.b_fc2
             else:
+                self.W_fc1 = nn.weight_variable([self._num_inputs * self._input_size, self._num_outputs])
+                self.b_fc1 = nn.bias_variable([self._num_outputs])
                 self.y = tf.matmul(x, self.W_fc1) + self.b_fc1
 
         with tf.name_scope('train'):
@@ -140,9 +143,9 @@ class NeuralNetwork:
     def save_weights(self, output_path):
         np.savetxt(output_path + "/W_fc1.txt", self.W_fc1.eval())
         np.savetxt(output_path + "/b_fc1.txt", self.b_fc1.eval())
-        if self.use_flex_hidden_layer:
-            np.savetxt(output_path + "/b_f.txt", self.b_f.eval())
-            np.savetxt(output_path + "/W_f.txt", self.W_f.eval())
+        if self.use_hidden_layer:
+            np.savetxt(output_path + "/b_fc2.txt", self.b_fc2.eval())
+            np.savetxt(output_path + "/W_fc2.txt", self.W_fc2.eval())
 
     def get_suggestion(self, ngram):
         if self._num_inputs == 4:
@@ -167,16 +170,26 @@ class NeuralNetwork:
         correct = [0, 0]
         incorrect = [0, 0]
         unclassified = [0, 0]
+        tp = 0
+        fp = 0
+        tn = 0
+        fn = 0
 
         for i in range(len(db_validate["groundtruths"])):
             suggestion = self.get_suggestion(db_validate["ngrams"][i])
             ground_truth = np.argmax(db_validate["groundtruths"][i])
             if suggestion == -1:
                 unclassified[ground_truth] = unclassified[ground_truth] + 1
+                tn = tn + 1
+                fn = fn + 1
             elif suggestion == ground_truth:
                 correct[ground_truth] = correct[ground_truth] + 1
+                tp = tp + 1
+                tn = tn + 1
             else:
                 incorrect[ground_truth] = incorrect[ground_truth] + 1
+                fp = fp + 1
+                fn = fn + 1
 
         accuracy = list(map(lambda c, i: c/(c+i), correct, incorrect))
         total_accuracy = list(map(lambda c, i, u: c/(c+i+u), correct, incorrect, unclassified))
@@ -186,6 +199,13 @@ class NeuralNetwork:
         print("accuracy:", accuracy)
         print("unclassified:", unclassified)
         print("total accuracy:", total_accuracy)
+
+        print("tp", tp)
+        print("tn", tn)
+        print("fp", fp)
+        print("fn", fn)
+        print("precision:", float(tp)/(tp+fp))
+        print("recall:", float(tp)/(tp+fn))
 
 
 def main():
