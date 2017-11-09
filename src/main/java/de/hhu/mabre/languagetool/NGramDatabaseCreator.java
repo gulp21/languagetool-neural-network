@@ -46,6 +46,10 @@ public class NGramDatabaseCreator {
 
     static PythonDict databaseFromSentences(String languageCode, String sentences, String token1, String token2, SamplingMode samplingMode) {
         List<String> tokens = tokenize(languageCode, sentences);
+        tokens.add(0, ".");
+        tokens.add(1, ".");
+        tokens.add(".");
+        tokens.add(".");
         return createDatabase(tokens, token1, token2, samplingMode);
     }
 
@@ -91,6 +95,7 @@ public class NGramDatabaseCreator {
     static ArrayList<NGram> getRelevantNGrams(List<String> tokens, String token) {
         ArrayList<NGram> nGrams;
         nGrams = new ArrayList<>();
+
         int end = tokens.size() - N/2;
         for(int i = N/2; i < end; i++) {
             if (tokens.get(i).equals(token)) {

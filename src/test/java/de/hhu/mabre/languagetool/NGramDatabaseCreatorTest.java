@@ -44,7 +44,7 @@ public class NGramDatabaseCreatorTest extends TestCase {
 
     public void testDatabaseFromSentences() {
         PythonDict db = databaseFromSentences("en", "I like that, too. I would like to go to the museum, too.", "to", "too", UNDERSAMPLE);
-        String expectedDb = "{'ngrams':[['would','like','to','go','to'],['that',',','too','.','I']],\n'groundtruths':[[1,0],[0,1]]}";
+        String expectedDb = "{'ngrams':[['would','like','to','go','to'],['that',',','too','.','I'],['to','go','to','the','museum'],['museum',',','too','.','.']],\n'groundtruths':[[1,0],[0,1],[1,0],[0,1]]}";
         assertEquals(expectedDb, db.toString());
     }
 
