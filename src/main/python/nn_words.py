@@ -13,7 +13,7 @@ import nn
 
 class NeuralNetwork:
     def __init__(self, dictionary_path, embedding_path, training_data_file,
-                 batch_size=1000, epochs=3000, use_hidden_layer=False, num_inputs=4, num_outputs=2):
+                 batch_size=1000, epochs=3000, use_hidden_layer=True, num_inputs=4, num_outputs=2):
         print(locals())
 
         self.use_hidden_layer = use_hidden_layer
@@ -88,7 +88,7 @@ class NeuralNetwork:
         db["ngrams"] = np.asarray(
             list(map(lambda ws: list(map(lambda w: self.get_word_representation(w), ws)), raw_db["ngrams"])))
         db["groundtruths"] = raw_db["groundtruths"]
-        db["ngrams"], db["groundtruths"] = shuffle(db["ngrams"], db["groundtruths"])
+        db["ngrams"], db["groundtruths"], db["ngrams_raw"] = shuffle(db["ngrams"], db["groundtruths"], raw_db["ngrams"])
         print("%s loaded, containing %d entries, class distribution: %s"
               % (path, len(db["groundtruths"]), str(np.sum(np.asarray(db["groundtruths"]), axis=0))))
         return db
@@ -180,14 +180,17 @@ class NeuralNetwork:
             ground_truth = np.argmax(db_validate["groundtruths"][i])
             if suggestion == -1:
                 unclassified[ground_truth] = unclassified[ground_truth] + 1
+                print("no decision:", " ".join(db_validate["ngrams_raw"][i]))
                 tn = tn + 1
                 fn = fn + 1
             elif suggestion == ground_truth:
                 correct[ground_truth] = correct[ground_truth] + 1
+                print("correct suggestion:", " ".join(db_validate["ngrams_raw"][i]))
                 tp = tp + 1
                 tn = tn + 1
             else:
                 incorrect[ground_truth] = incorrect[ground_truth] + 1
+                print("possible wrong suggestion:", " ".join(db_validate["ngrams_raw"][i]))
                 fp = fp + 1
                 fn = fn + 1
 
