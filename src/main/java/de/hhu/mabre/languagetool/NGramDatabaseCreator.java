@@ -1,11 +1,16 @@
 package de.hhu.mabre.languagetool;
 
+import com.google.common.collect.Lists;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static de.hhu.mabre.languagetool.FileTokenizer.readText;
 import static de.hhu.mabre.languagetool.FileTokenizer.tokenize;
@@ -50,12 +55,18 @@ public class NGramDatabaseCreator {
         tokens.add(1, ".");
         tokens.add(".");
         tokens.add(".");
-        return createDatabase(tokens, token1, token2, samplingMode);
+        List<String> tokens1 = tokenize(languageCode, token1);
+        List<String> tokens2 = tokenize(languageCode, token2);
+        return createDatabase(tokens, tokens1, tokens2, samplingMode);
     }
 
     static PythonDict createDatabase(List<String> tokens, String token1, String token2, SamplingMode samplingMode) {
-        ArrayList<NGram> token1NGrams = getRelevantNGrams(tokens, token1);
-        ArrayList<NGram> token2NGrams = getRelevantNGrams(tokens, token2);
+        return createDatabase(tokens, Collections.singletonList(token1), Collections.singletonList(token2), samplingMode);
+    }
+
+    static PythonDict createDatabase(List<String> tokens, List<String> tokens1, List<String> tokens2, SamplingMode samplingMode) {
+        ArrayList<NGram> token1NGrams = getRelevantNGrams(tokens, tokens1);
+        ArrayList<NGram> token2NGrams = getRelevantNGrams(tokens, tokens2);
 
         int token1size = token1NGrams.size();
         int token2Count = token2NGrams.size();
@@ -92,14 +103,19 @@ public class NGramDatabaseCreator {
         return -1;
     }
 
-    static ArrayList<NGram> getRelevantNGrams(List<String> tokens, String token) {
+    static ArrayList<NGram> getRelevantNGrams(List<String> tokens, List<String> subjectTokens) {
         ArrayList<NGram> nGrams;
         nGrams = new ArrayList<>();
 
-        int end = tokens.size() - N/2;
-        for(int i = N/2; i < end; i++) {
-            if (tokens.get(i).equals(token)) {
-                nGrams.add(new NGram(tokens.subList(i-N/2, i+N/2+1)));
+        final int end = tokens.size() - N/2;
+        final int subjectLength = subjectTokens.size();
+        for(int i = N/2 - 1; i <= end - subjectLength; i++) {
+            if (tokens.subList(i, i+subjectLength).equals(subjectTokens)) {
+                List<String> ngram = new LinkedList<>();
+                ngram.addAll(tokens.subList(i-N/2, i));
+                ngram.add(subjectTokens.stream().collect(Collectors.joining(" ")));
+                ngram.addAll(tokens.subList(i+subjectLength, i+N/2+subjectLength));
+                nGrams.add(new NGram(ngram));
             }
         }
         return nGrams;
