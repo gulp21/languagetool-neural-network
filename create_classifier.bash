@@ -6,4 +6,4 @@ if [ ! $# -eq 5 ]; then
     exit -1
 fi
 
-python3 src/main/python/nn_words.py $1 $2 $3 $4 $5
+python3 src/main/python/nn_words.py "$1" "$2" "$3" "$4" "$5"
