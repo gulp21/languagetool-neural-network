@@ -1,6 +1,5 @@
 package de.hhu.mabre.languagetool;
 
-import com.google.common.collect.Lists;
 import junit.framework.TestCase;
 
 import java.util.Arrays;
@@ -74,6 +73,12 @@ public class NGramDatabaseCreatorTest extends TestCase {
     public void testMultiTokenSubjects() {
         PythonDict db = databaseFromSentences("de", "Ich habe das nicht gesagt. Ich habe gesagt, dass ich zum Karaokeabend kommen werde. Ich mag das nicht.", "das", ", dass", NONE);
         String expectedDb = "{'ngrams':[['Ich','habe','das','nicht','gesagt'],['Ich','mag','das','nicht','.'],['habe','gesagt',', dass','ich','zum']],\n'groundtruths':[[1,0],[1,0],[0,1]]}";
+        assertEquals(expectedDb, db.toString());
+    }
+
+    public void testDatabaseFromSentencesAndThreeTokens() {
+        PythonDict db = databaseFromSentences("en", "I like that, too. I would like to go to two museums, too.", Arrays.asList("to", "too", "two"), UNDERSAMPLE);
+        String expectedDb = "{'ngrams':[['would','like','to','go','to'],['that',',','too','.','I'],['go','to','two','museums',',']],\n'groundtruths':[[1,0,0],[0,1,0],[0,0,1]]}";
         assertEquals(expectedDb, db.toString());
     }
 

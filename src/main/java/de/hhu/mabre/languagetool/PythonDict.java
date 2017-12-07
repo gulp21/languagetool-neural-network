@@ -1,17 +1,16 @@
 package de.hhu.mabre.languagetool;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 class PythonDict {
     private List<NGram> nGrams = new LinkedList<>();
     private List<Integer> groundTruths = new LinkedList<>();
 
     void add(NGram nGram, int groundTruth) {
-        if(groundTruth != 0 && groundTruth != 1) {
-            throw new IllegalArgumentException("groundTruth must be 0 or 1");
-        }
         nGrams.add(nGram);
         groundTruths.add(groundTruth);
     }
@@ -31,6 +30,12 @@ class PythonDict {
     }
 
     private static String oneHotEncode(List<Integer> groundTruths) {
-        return groundTruths.stream().map(i -> i == 0 ? "[1,0]" : "[0,1]").collect(Collectors.joining(","));
+        int categories = Collections.max(groundTruths) + 1;
+        return groundTruths.stream().map(i -> oneHotEncode(i, categories)).collect(Collectors.joining(","));
+    }
+
+    private static String oneHotEncode(int n, int categories) {
+        String list = IntStream.range(0, categories).mapToObj(i -> n == i ? "1" : "0").collect(Collectors.joining(","));
+        return "[" + list + "]";
     }
 }

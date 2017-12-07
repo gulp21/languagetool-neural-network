@@ -1,16 +1,10 @@
 package de.hhu.mabre.languagetool;
 
-import com.google.common.collect.Lists;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static de.hhu.mabre.languagetool.FileTokenizer.readText;
 import static de.hhu.mabre.languagetool.FileTokenizer.tokenize;
@@ -25,7 +19,7 @@ public class NGramDatabaseCreator {
     private static final int N = 5;
 
     public static void main(String[] args) {
-        if(args.length != 5) {
+        if(args.length < 5) {
             System.out.println("parameters: language-code training-filename validation-filename token1 token2");
             System.exit(-1);
         }
@@ -33,72 +27,79 @@ public class NGramDatabaseCreator {
         String languageCode = args[0];
         String trainingFilename = args[1];
         String validationFilename = args[2];
-        String token1 = args[3];
-        String token2 = args[4];
+        List<String> subjects = Arrays.asList(args).subList(3, args.length);
 
-        writeDatabase(databaseFromSentences(languageCode, readText(trainingFilename), token1, token2, UNDERSAMPLE),trainingFilename+".py");
-        writeDatabase(databaseFromSentences(languageCode, readText(validationFilename), token1, token2, NONE), validationFilename+".py");
+        writeDatabase(databaseFromSentences(languageCode, readText(trainingFilename), subjects, UNDERSAMPLE),trainingFilename+".py");
+        writeDatabase(databaseFromSentences(languageCode, readText(validationFilename), subjects, NONE), validationFilename+".py");
     }
 
     private static void writeDatabase(PythonDict pythonDict, String filename) {
         try {
             Files.write(Paths.get(filename), Collections.singletonList(pythonDict.toString()));
-            System.out.println(filename + "created");
+            System.out.println(filename + " created");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    static PythonDict databaseFromSentences(String languageCode, String sentences, String token1, String token2, SamplingMode samplingMode) {
+    static PythonDict databaseFromSentences(String languageCode, String sentences, List<String> subjects, SamplingMode samplingMode) {
         List<String> tokens = tokenize(languageCode, sentences);
         tokens.add(0, ".");
         tokens.add(1, ".");
         tokens.add(".");
         tokens.add(".");
-        List<String> tokens1 = tokenize(languageCode, token1);
-        List<String> tokens2 = tokenize(languageCode, token2);
-        return createDatabase(tokens, tokens1, tokens2, samplingMode);
+        List<List<String>> tokenizedSubjects = new ArrayList<>();
+        for (String subject: subjects) {
+            tokenizedSubjects.add(tokenize(languageCode, subject));
+        }
+        return createDatabase(tokens, tokenizedSubjects, samplingMode);
+    }
+
+    static PythonDict databaseFromSentences(String languageCode, String sentences, String subject1, String subject2, SamplingMode samplingMode) {
+        return databaseFromSentences(languageCode, sentences, Arrays.asList(subject1, subject2), samplingMode);
     }
 
     static PythonDict createDatabase(List<String> tokens, String token1, String token2, SamplingMode samplingMode) {
-        return createDatabase(tokens, Collections.singletonList(token1), Collections.singletonList(token2), samplingMode);
+        return createDatabase(tokens, Arrays.asList(Collections.singletonList(token1), Collections.singletonList(token2)), samplingMode);
     }
 
-    static PythonDict createDatabase(List<String> tokens, List<String> tokens1, List<String> tokens2, SamplingMode samplingMode) {
-        ArrayList<NGram> token1NGrams = getRelevantNGrams(tokens, tokens1);
-        ArrayList<NGram> token2NGrams = getRelevantNGrams(tokens, tokens2);
+    static PythonDict createDatabase(List<String> tokens, List<List<String>> subjects, SamplingMode samplingMode) {
+        ArrayList<ArrayList<NGram>> nGrams = new ArrayList<>();
 
-        int token1size = token1NGrams.size();
-        int token2Count = token2NGrams.size();
+        for (List<String> subject: subjects) {
+            nGrams.add(getRelevantNGrams(tokens, subject));
+        }
 
         PythonDict db = new PythonDict();
 
         if(samplingMode == NONE) {
-            db.addAll(token1NGrams, 0);
-            db.addAll(token2NGrams, 1);
+            for (int i = 0; i < nGrams.size(); i++) {
+                db.addAll(nGrams.get(i), i);
+            }
             return db;
         }
 
-        int numberOfSamples = getNumberOfSamples(token1size, token2Count, samplingMode);
+        int numberOfSamples = getNumberOfSamples(nGrams.stream().map(ArrayList::size).collect(Collectors.toList()), samplingMode);
         System.out.println("sampling to " + numberOfSamples);
 
         for (int i = 0; i < numberOfSamples; i++) {
-            db.add(token1NGrams.get(i % token1size), 0);
-            db.add(token2NGrams.get(i % token2Count), 1);
+            for (int n = 0; n < nGrams.size(); n++) {
+                db.add(nGrams.get(n).get(i % nGrams.get(n).size()), n);
+            }
         }
         return db;
     }
 
-    private static int getNumberOfSamples(int token1size, int token2Count, SamplingMode samplingMode) {
+    private static int getNumberOfSamples(List<Integer> sampleCounts, SamplingMode samplingMode) {
         switch (samplingMode) {
             case NONE:
                 throw new UnsupportedOperationException("NONE not supported here.");
             case UNDERSAMPLE:
-                return Math.min(token1size, token2Count);
+                return Collections.min(sampleCounts);
             case OVERSAMPLE:
-                return Math.max(token1size, token2Count);
+                return Collections.max(sampleCounts);
             case MODERATE_OVERSAMPLE:
-                return Math.min(Math.min(2*token1size, 2*token2Count), Math.max(token1size, token2Count));
+                return Math.min(2 * Collections.min(sampleCounts), Collections.max(sampleCounts));
         }
         return -1;
     }

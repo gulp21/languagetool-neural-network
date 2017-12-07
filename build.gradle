@@ -11,7 +11,11 @@ task tokenizeFile(type:JavaExec) {
 task createNGramDatabase(type:JavaExec) {
     main = "de.hhu.mabre.languagetool.NGramDatabaseCreator"
     classpath = sourceSets.main.runtimeClasspath
-    args "${-> languageCode}", "${-> trainingFile}", "${-> validationFile}", "${-> token1}", "${-> token2}"
+    if(project.hasProperty("token3")) {
+        args "${-> languageCode}", "${-> trainingFile}", "${-> validationFile}", "${-> token1}", "${-> token2}", "${-> token3}"
+    } else {
+        args "${-> languageCode}", "${-> trainingFile}", "${-> validationFile}", "${-> token1}", "${-> token2}"
+    }
     maxHeapSize = "2048m"
 }
 

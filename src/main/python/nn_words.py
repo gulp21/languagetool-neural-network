@@ -13,7 +13,7 @@ import nn
 
 class NeuralNetwork:
     def __init__(self, dictionary_path, embedding_path, training_data_file,
-                 batch_size=1000, epochs=3000, use_hidden_layer=True, num_inputs=4, num_outputs=2):
+                 batch_size=1000, epochs=3000, use_hidden_layer=False, num_inputs=4, num_outputs=2):
         print(locals())
 
         self.use_hidden_layer = use_hidden_layer
