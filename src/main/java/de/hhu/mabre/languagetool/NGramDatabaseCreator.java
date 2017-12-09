@@ -99,36 +99,34 @@ public class NGramDatabaseCreator {
 
         PythonDict db = new PythonDict();
 
-        if(samplingMode == NONE) {
-            for (int i = 0; i < nGrams.size(); i++) {
-                db.addAll(nGrams.get(i), i);
-            }
-            return db;
-        }
+        List<Integer> numberOfSamples = getNumberOfSamples(nGrams.stream().map(ArrayList::size).collect(Collectors.toList()), samplingMode);
+        System.out.println("sampling to " + Arrays.toString(numberOfSamples.toArray()));
 
-        int numberOfSamples = getNumberOfSamples(nGrams.stream().map(ArrayList::size).collect(Collectors.toList()), samplingMode);
-        System.out.println("sampling to " + numberOfSamples);
-
-        for (int i = 0; i < numberOfSamples; i++) {
-            for (int n = 0; n < nGrams.size(); n++) {
+        for (int n = 0; n < nGrams.size(); n++) {
+            for (int i = 0; i < numberOfSamples.get(n); i++) {
                 db.add(nGrams.get(n).get(i % nGrams.get(n).size()), n);
             }
         }
         return db;
     }
 
-    private static int getNumberOfSamples(List<Integer> sampleCounts, SamplingMode samplingMode) {
-        switch (samplingMode) {
-            case NONE:
-                throw new UnsupportedOperationException("NONE not supported here.");
-            case UNDERSAMPLE:
-                return Collections.min(sampleCounts);
-            case OVERSAMPLE:
-                return Collections.max(sampleCounts);
-            case MODERATE_OVERSAMPLE:
-                return Math.min(2 * Collections.min(sampleCounts), Collections.max(sampleCounts));
+    private static List<Integer> getNumberOfSamples(List<Integer> sampleCounts, SamplingMode samplingMode) {
+        if (samplingMode != NONE) {
+            int numberOfSamples = 0;
+            switch (samplingMode) {
+                case UNDERSAMPLE:
+                    numberOfSamples = Collections.min(sampleCounts);
+                    break;
+                case OVERSAMPLE:
+                    numberOfSamples = Collections.max(sampleCounts);
+                    break;
+                case MODERATE_OVERSAMPLE:
+                    numberOfSamples = Math.min(2 * Collections.min(sampleCounts), Collections.max(sampleCounts));
+                    break;
+            }
+            return Collections.nCopies(sampleCounts.size(), numberOfSamples);
         }
-        return -1;
+        return sampleCounts;
     }
 
     static ArrayList<NGram> getRelevantNGrams(List<String> tokens, List<String> subjectTokens) {

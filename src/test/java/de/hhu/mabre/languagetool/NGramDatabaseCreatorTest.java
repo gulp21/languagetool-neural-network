@@ -45,13 +45,13 @@ public class NGramDatabaseCreatorTest extends TestCase {
 
     public void testCreateDatabaseModerateOversample() {
         PythonDict db = createDatabase(Arrays.asList("c", "b", "c", "d", "e", "f", "g", "h", "c", "c", "i", "j"), "c", "f", SamplingMode.MODERATE_OVERSAMPLE);
-        String expectedDb = "{'ngrams':[['c','b','c','d','e'],['d','e','f','g','h'],['g','h','c','c','i'],['d','e','f','g','h']],\n'groundtruths':[[1,0],[0,1],[1,0],[0,1]]}";
+        String expectedDb = "{'ngrams':[['c','b','c','d','e'],['g','h','c','c','i'],['d','e','f','g','h'],['d','e','f','g','h']],\n'groundtruths':[[1,0],[1,0],[0,1],[0,1]]}";
         assertEquals(expectedDb, db.toString());
     }
 
     public void testCreateDatabaseOversample() {
         PythonDict db = createDatabase(Arrays.asList("c", "b", "c", "d", "e", "f", "g", "h", "c", "c", "i", "j"), "c", "f", SamplingMode.OVERSAMPLE);
-        String expectedDb = "{'ngrams':[['c','b','c','d','e'],['d','e','f','g','h'],['g','h','c','c','i'],['d','e','f','g','h'],['h','c','c','i','j'],['d','e','f','g','h']],\n'groundtruths':[[1,0],[0,1],[1,0],[0,1],[1,0],[0,1]]}";
+        String expectedDb = "{'ngrams':[['c','b','c','d','e'],['g','h','c','c','i'],['h','c','c','i','j'],['d','e','f','g','h'],['d','e','f','g','h'],['d','e','f','g','h']],\n'groundtruths':[[1,0],[1,0],[1,0],[0,1],[0,1],[0,1]]}";
         assertEquals(expectedDb, db.toString());
     }
 
@@ -63,7 +63,7 @@ public class NGramDatabaseCreatorTest extends TestCase {
 
     public void testDatabaseFromSentences() {
         PythonDict db = databaseFromSentences("en", "I like that, too. I would like to go to the museum, too.", "to", "too", UNDERSAMPLE);
-        String expectedDb = "{'ngrams':[['would','like','to','go','to'],['that',',','too','.','I'],['to','go','to','the','museum'],['museum',',','too','.','.']],\n'groundtruths':[[1,0],[0,1],[1,0],[0,1]]}";
+        String expectedDb = "{'ngrams':[['would','like','to','go','to'],['to','go','to','the','museum'],['that',',','too','.','I'],['museum',',','too','.','.']],\n'groundtruths':[[1,0],[1,0],[0,1],[0,1]]}";
         assertEquals(expectedDb, db.toString());
     }
 
