@@ -1,15 +1,19 @@
 package de.hhu.mabre.languagetool;
 
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static de.hhu.mabre.languagetool.FileTokenizer.readText;
 import static de.hhu.mabre.languagetool.FileTokenizer.tokenize;
 import static de.hhu.mabre.languagetool.SamplingMode.NONE;
 import static de.hhu.mabre.languagetool.SamplingMode.UNDERSAMPLE;
+import static de.hhu.mabre.languagetool.SubjectGrepper.grep;
+import static de.hhu.mabre.languagetool.SubsetType.TRAINING;
+import static de.hhu.mabre.languagetool.SubsetType.VALIDATION;
 
 /**
  * Create a 5-gram database as input for the neural network.
@@ -19,18 +23,41 @@ public class NGramDatabaseCreator {
     private static final int N = 5;
 
     public static void main(String[] args) {
-        if(args.length < 5) {
-            System.out.println("parameters: language-code training-filename validation-filename token1 token2");
+        if(args.length < 4) {
+            System.out.println("parameters: language-code corpus subject1 subject2 …");
             System.exit(-1);
         }
 
         String languageCode = args[0];
-        String trainingFilename = args[1];
-        String validationFilename = args[2];
-        List<String> subjects = Arrays.asList(args).subList(3, args.length);
+        String corpusFilename = args[1];
+        List<String> subjects = Arrays.asList(args).subList(2, args.length);
 
-        writeDatabase(databaseFromSentences(languageCode, readText(trainingFilename), subjects, UNDERSAMPLE),trainingFilename+".py");
-        writeDatabase(databaseFromSentences(languageCode, readText(validationFilename), subjects, NONE), validationFilename+".py");
+        List<String> relevantLines = new ArrayList<>(0);
+        try {
+            relevantLines = grep(new FileReader(corpusFilename), subjects.toArray(new String[1]));
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        HashMap<SubsetType, String> sets = randomlySplit(relevantLines, 20);
+
+        String basename = System.getProperty("java.io.tmpdir") + File.separator + String.join("_", subjects);
+
+        writeDatabase(databaseFromSentences(languageCode, sets.get(TRAINING), subjects, UNDERSAMPLE), basename + "_training.py");
+        writeDatabase(databaseFromSentences(languageCode, sets.get(VALIDATION), subjects, NONE), basename +"_validate.py");
+    }
+
+    static HashMap<SubsetType, String> randomlySplit(List<String> items, int validatePercentage) {
+        Collections.shuffle(items);
+        int totalLines = items.size();
+        int firstTrainingIndex = validatePercentage * totalLines / 100;
+        String trainingLines = String.join("\n", items.subList(firstTrainingIndex, totalLines));
+        String validationLines = String.join("\n", items.subList(0, firstTrainingIndex));
+        HashMap<SubsetType, String> sets = new HashMap<>();
+        sets.put(TRAINING, trainingLines);
+        sets.put(VALIDATION, validationLines);
+        return sets;
     }
 
     private static void writeDatabase(PythonDict pythonDict, String filename) {

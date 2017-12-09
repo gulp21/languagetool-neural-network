@@ -4,11 +4,14 @@ import junit.framework.TestCase;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import static de.hhu.mabre.languagetool.NGramDatabaseCreator.*;
 import static de.hhu.mabre.languagetool.SamplingMode.NONE;
 import static de.hhu.mabre.languagetool.SamplingMode.UNDERSAMPLE;
+import static de.hhu.mabre.languagetool.SubsetType.TRAINING;
+import static de.hhu.mabre.languagetool.SubsetType.VALIDATION;
 
 public class NGramDatabaseCreatorTest extends TestCase {
 
@@ -80,6 +83,13 @@ public class NGramDatabaseCreatorTest extends TestCase {
         PythonDict db = databaseFromSentences("en", "I like that, too. I would like to go to two museums, too.", Arrays.asList("to", "too", "two"), UNDERSAMPLE);
         String expectedDb = "{'ngrams':[['would','like','to','go','to'],['that',',','too','.','I'],['go','to','two','museums',',']],\n'groundtruths':[[1,0,0],[0,1,0],[0,0,1]]}";
         assertEquals(expectedDb, db.toString());
+    }
+
+    public void testRandomlySplit() {
+        List<String> lines = Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+        HashMap<SubsetType, String> sets = randomlySplit(lines, 32);
+        assertEquals(3, sets.get(VALIDATION).split("\n").length);
+        assertEquals(7, sets.get(TRAINING).split("\n").length);
     }
 
 }

@@ -12,9 +12,9 @@ task createNGramDatabase(type:JavaExec) {
     main = "de.hhu.mabre.languagetool.NGramDatabaseCreator"
     classpath = sourceSets.main.runtimeClasspath
     if(project.hasProperty("token3")) {
-        args "${-> languageCode}", "${-> trainingFile}", "${-> validationFile}", "${-> token1}", "${-> token2}", "${-> token3}"
+        args "${-> languageCode}", "${-> corpusFile}", "${-> token1}", "${-> token2}", "${-> token3}"
     } else {
-        args "${-> languageCode}", "${-> trainingFile}", "${-> validationFile}", "${-> token1}", "${-> token2}"
+        args "${-> languageCode}", "${-> corpusFile}", "${-> token1}", "${-> token2}"
     }
     maxHeapSize = "2048m"
 }
