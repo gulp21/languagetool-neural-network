@@ -153,11 +153,11 @@ class NeuralNetwork:
                   self.words[1]: [ngram[1]],
                   self.words[2]: [ngram[3]],
                   self.words[3]: [ngram[4]],
-                  self.y_: [[0, 0]]}
+                  self.y_: [list(np.zeros(self._num_outputs))]}
         elif self._num_inputs == 2:
             fd = {self.words[0]: [ngram[1]],
                   self.words[1]: [ngram[3]],
-                  self.y_: [[0, 0]]}
+                  self.y_: [list(np.zeros(self._num_outputs))]}
         scores = self.y.eval(fd)[0]
         if np.max(scores) > .5 and np.min(scores) < -.5:
             return np.argmax(scores)
@@ -167,9 +167,9 @@ class NeuralNetwork:
     def validate(self, test_data_file):
         db_validate = self.get_db(test_data_file, oversample=False)
 
-        correct = [0, 0]
-        incorrect = [0, 0]
-        unclassified = [0, 0]
+        correct = list(np.zeros(self._num_outputs))
+        incorrect = list(np.zeros(self._num_outputs))
+        unclassified = list(np.zeros(self._num_outputs))
         tp = 0
         fp = 0
         tn = 0
