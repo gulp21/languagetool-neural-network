@@ -13,7 +13,7 @@ import nn
 
 class NeuralNetwork:
     def __init__(self, dictionary_path, embedding_path, training_data_file,
-                 batch_size=1000, epochs=3000, use_hidden_layer=False, num_inputs=4, num_outputs=2):
+                 batch_size=1000, epochs=3000, use_hidden_layer=False, num_inputs=4):
         print(locals())
 
         self.use_hidden_layer = use_hidden_layer
@@ -28,10 +28,10 @@ class NeuralNetwork:
 
         self._input_size = np.shape(self.embedding)[1]
         self._num_inputs = num_inputs
-        self._num_outputs = num_outputs
 
         self._db = self.get_db(training_data_file, oversample=True)
         self._TRAINING_SAMPLES = len(self._db["groundtruths"])
+        self._num_outputs = len(self._db["groundtruths"][0])
         self._current_batch_number = 0
 
         self.setup_net()
