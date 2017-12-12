@@ -29,12 +29,12 @@ class NeuralNetwork:
         self._input_size = np.shape(self.embedding)[1]
         self._num_inputs = num_inputs
 
-        self._db = self.get_db(training_data_file, oversample=True)
+        self._db = self.get_db(training_data_file)
         self._TRAINING_SAMPLES = len(self._db["groundtruths"])
         self._num_outputs = len(self._db["groundtruths"][0])
         self._current_batch_number = 0
 
-        self._db_validate = self.get_db(test_data_file, oversample=False)
+        self._db_validate = self.get_db(test_data_file)
 
         self.setup_net()
 
@@ -83,7 +83,7 @@ class NeuralNetwork:
         else:
             return self.embedding[self.dictionary["UNK"]]
 
-    def get_db(self, path, oversample=False): #TODO oversample
+    def get_db(self, path):
         db = dict()
         raw_db = eval(codecs.open(path, "r", "utf-8").read())
         # raw_db = {'ngrams':[['too','early','to','rule','out'],['park','next','to','the','town'],['has','right','to','destroy','houses'],['ll','have','to','move','them'],['percent','increase','to','its','budget'],['ll','continue','to','improve','in'],['This','applies','to','footwear','too'],['t','appear','to','be','too'],['taking','action','to','prevent','a'],['too','close','to','the','fire'],['It','rates','to','get','a'],['it','was','too','early','to'],['houses',',','too','.','We'],['to','footwear','too','-','can'],['to','be','too','much','money'],['been','waiting','too','long','for'],['leave','rates','too','low','for'],['low','for','too','long',','],['not','going','too','close','to']],'groundtruths':[[1,0],[1,0],[1,0],[1,0],[1,0],[1,0],[1,0],[1,0],[1,0],[1,0],[1,0],[0,1],[0,1],[0,1],[0,1],[0,1],[0,1],[0,1],[0,1]]}
@@ -138,6 +138,7 @@ class NeuralNetwork:
             if e % 100 == 0:
                 print("--- VALIDATION PERFORMANCE -")
                 self.validate()
+                self.validate_error_detection()
                 print("----------------------------")
         self._print_accuracy(self.epochs)
 
@@ -154,6 +155,13 @@ class NeuralNetwork:
             np.savetxt(output_path + "/W_fc2.txt", self.W_fc2.eval())
 
     def get_suggestion(self, ngram):
+        scores = self.get_score(ngram)
+        if np.max(scores) > .5 and np.min(scores) < -.5:
+            return np.argmax(scores)
+        else:
+            return -1
+
+    def get_score(self, ngram):
         if self._num_inputs == 4:
             fd = {self.words[0]: [ngram[0]],
                   self.words[1]: [ngram[1]],
@@ -165,10 +173,7 @@ class NeuralNetwork:
                   self.words[1]: [ngram[3]],
                   self.y_: [list(np.zeros(self._num_outputs))]}
         scores = self.y.eval(fd)[0]
-        if np.max(scores) > .5 and np.min(scores) < -.5:
-            return np.argmax(scores)
-        else:
-            return -1
+        return scores
 
     def validate(self, verbose=False):
         correct = list(np.zeros(self._num_outputs))
@@ -217,6 +222,61 @@ class NeuralNetwork:
         print("precision:", float(tp)/(tp+fp))
         print("recall:", float(tp)/(tp+fn))
 
+    def validate_error_detection(self, threshold: float=0.5, verbose=False):
+        correct = list(np.zeros(self._num_outputs))
+        incorrect = list(np.zeros(self._num_outputs))
+        unclassified = list(np.zeros(self._num_outputs))
+        tp = 0
+        fp = 0
+        fn = 0
+
+        for i in range(len(self._db_validate["groundtruths"])):
+            scores = self.get_score(self._db_validate["ngrams"][i])
+            best_match = self.get_suggestion(self._db_validate["ngrams"][i])
+            best_match_score = scores[best_match]
+            ground_truth = np.argmax(self._db_validate["groundtruths"][i])
+            ground_truth_score = scores[ground_truth]
+
+            if best_match_score > threshold and ground_truth_score < -threshold:
+                # suggest alternative
+                incorrect[ground_truth] = incorrect[ground_truth] + 1
+                if verbose:
+                    print("false alarm:", " ".join(self._db_validate["ngrams_raw"][i]))
+                fp = fp + 1
+                fn = fn + 1
+            elif ground_truth_score > threshold:
+                # ground truth will be suggested
+                correct[ground_truth] = correct[ground_truth] + 1
+                if verbose:
+                    print("correct suggestion included:", " ".join(self._db_validate["ngrams_raw"][i]))
+                tp = tp + 1
+            else:
+                # nothing happens
+                unclassified[ground_truth] = unclassified[ground_truth] + 1
+                if verbose:
+                    print("no decision:", " ".join(self._db_validate["ngrams_raw"][i]))
+                fn = fn + 1
+
+        accuracy = list(map(lambda c, i: c/(c+i), correct, incorrect))
+        total_accuracy = list(map(lambda c, i, u: c/(c+i+u), correct, incorrect, unclassified))
+
+        print("correct:", correct)
+        print("incorrect:", incorrect)
+        print("accuracy:", accuracy)
+        print("unclassified:", unclassified)
+        print("total accuracy:", total_accuracy)
+
+        print("tp", tp)
+        print("fp", fp)
+        print("fn", fn)
+        print("precision:", float(tp)/(tp+fp))
+        print("recall:", float(tp)/(tp+fn))
+        accuracy = list(map(lambda c, i: c/(c+i), correct, incorrect))
+        print("accuracy:", accuracy)
+
+        micro_accuracy = np.sum(correct)/(np.sum(correct)+np.sum(incorrect))
+        print("micro accuracy:", micro_accuracy)
+
 
 def main():
     if len(sys.argv) != 6:
@@ -230,7 +290,15 @@ def main():
     network = NeuralNetwork(dictionary_path, embedding_path, training_data_file, test_data_file)
     network.train()
     network.save_weights(output_path)
-    network.validate(verbose=True)
+    network.validate(verbose=False)
+    print(0)
+    network.validate_error_detection(verbose=False, threshold=0)
+    print(.5)
+    network.validate_error_detection(verbose=False, threshold=.5)
+    print(1.0)
+    network.validate_error_detection(verbose=False, threshold=1.)
+    print(1.5)
+    network.validate_error_detection(verbose=True, threshold=1.5)
 
 
 if __name__ == '__main__':
