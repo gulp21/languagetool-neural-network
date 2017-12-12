@@ -12,8 +12,8 @@ import nn
 
 
 class NeuralNetwork:
-    def __init__(self, dictionary_path, embedding_path, training_data_file,
-                 batch_size=1000, epochs=3000, use_hidden_layer=False, num_inputs=4):
+    def __init__(self, dictionary_path: str, embedding_path: str, training_data_file: str, test_data_file: str,
+                 batch_size: int=1000, epochs: int=3000, use_hidden_layer: bool=False, num_inputs:int=4):
         print(locals())
 
         self.use_hidden_layer = use_hidden_layer
@@ -33,6 +33,8 @@ class NeuralNetwork:
         self._TRAINING_SAMPLES = len(self._db["groundtruths"])
         self._num_outputs = len(self._db["groundtruths"][0])
         self._current_batch_number = 0
+
+        self._db_validate = self.get_db(test_data_file, oversample=False)
 
         self.setup_net()
 
@@ -133,6 +135,10 @@ class NeuralNetwork:
                 _ = self.sess.run([self.train_step], fd)  # train with next batch
             if e % 10 == 0:
                 self._print_accuracy(e)
+            if e % 100 == 0:
+                print("--- VALIDATION PERFORMANCE -")
+                self.validate()
+                print("----------------------------")
         self._print_accuracy(self.epochs)
 
     def _print_accuracy(self, epoch):
@@ -164,9 +170,7 @@ class NeuralNetwork:
         else:
             return -1
 
-    def validate(self, test_data_file):
-        db_validate = self.get_db(test_data_file, oversample=False)
-
+    def validate(self, verbose=False):
         correct = list(np.zeros(self._num_outputs))
         incorrect = list(np.zeros(self._num_outputs))
         unclassified = list(np.zeros(self._num_outputs))
@@ -175,22 +179,25 @@ class NeuralNetwork:
         tn = 0
         fn = 0
 
-        for i in range(len(db_validate["groundtruths"])):
-            suggestion = self.get_suggestion(db_validate["ngrams"][i])
-            ground_truth = np.argmax(db_validate["groundtruths"][i])
+        for i in range(len(self._db_validate["groundtruths"])):
+            suggestion = self.get_suggestion(self._db_validate["ngrams"][i])
+            ground_truth = np.argmax(self._db_validate["groundtruths"][i])
             if suggestion == -1:
                 unclassified[ground_truth] = unclassified[ground_truth] + 1
-                print("no decision:", " ".join(db_validate["ngrams_raw"][i]))
+                if verbose:
+                    print("no decision:", " ".join(self._db_validate["ngrams_raw"][i]))
                 tn = tn + 1
                 fn = fn + 1
             elif suggestion == ground_truth:
                 correct[ground_truth] = correct[ground_truth] + 1
-                print("correct suggestion:", " ".join(db_validate["ngrams_raw"][i]))
+                if verbose:
+                    print("correct suggestion:", " ".join(self._db_validate["ngrams_raw"][i]))
                 tp = tp + 1
                 tn = tn + 1
             else:
                 incorrect[ground_truth] = incorrect[ground_truth] + 1
-                print("possible wrong suggestion:", " ".join(db_validate["ngrams_raw"][i]))
+                if verbose:
+                    print("possible wrong suggestion:", " ".join(self._db_validate["ngrams_raw"][i]))
                 fp = fp + 1
                 fn = fn + 1
 
@@ -220,10 +227,10 @@ def main():
     training_data_file = sys.argv[3]
     test_data_file = sys.argv[4]
     output_path = sys.argv[5]
-    network = NeuralNetwork(dictionary_path, embedding_path, training_data_file)
+    network = NeuralNetwork(dictionary_path, embedding_path, training_data_file, test_data_file)
     network.train()
     network.save_weights(output_path)
-    network.validate(test_data_file)
+    network.validate(verbose=True)
 
 
 if __name__ == '__main__':
