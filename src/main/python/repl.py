@@ -9,6 +9,7 @@ def get_word_representation(dictionary, embedding, word):  # todo static
     if word in dictionary:
         return embedding[dictionary[word]]
     else:
+        print(" " + word + " is unknown")
         return embedding[dictionary["UNK"]]
 
 
@@ -32,13 +33,14 @@ def get_probabilities(scores):
 def check(dictionary, embedding, W, b, ngram, subjects, suggestion_threshold=.5, error_threshold=.2):
     words = np.concatenate(list(map(lambda token: get_word_representation(dictionary, embedding, token), np.delete(ngram, 2))))
     scores = words @ W + b
-    best_match_score = scores[np.argmax(scores)]
+    probabilities = get_probabilities(scores)
+    best_match_probability = probabilities[np.argmax(probabilities)]
     subject_index = subjects.index(ngram[2])
-    subject_score = scores[subject_index]
+    subject_probability = probabilities[subject_index]
 
-    if best_match_score > suggestion_threshold and subject_score < error_threshold:
+    if best_match_probability > suggestion_threshold and subject_probability < error_threshold:
         print("ERROR detected, suggestions:", get_rating(scores, subjects))
-    elif subject_score > suggestion_threshold:
+    elif subject_probability > suggestion_threshold:
         print("ok", get_rating(scores, subjects))
     else:
         print("no decision", get_rating(scores, subjects))
@@ -59,7 +61,7 @@ def main():
     W = np.loadtxt(W_path)
     b = np.loadtxt(b_path)
 
-    subjects = ["seid", "seit", "sei", "mein", "dein", "fein", "sein"]
+    subjects = ["das", "dass", "dann", "den", "denn", "meine", "deine", "seine", "in", "ein", "an", "seid", "seit", "sei", "mein", "dein", "fein", "sein"]
     print(subjects)
 
     while True:
