@@ -13,8 +13,11 @@ task createNGramDatabase(type:JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     if(project.hasProperty("token3")) {
         args "${-> languageCode}", "${-> corpusFile}", "${-> token1}", "${-> token2}", "${-> token3}"
-    } else {
+    } else if(project.hasProperty("token3")) {
         args "${-> languageCode}", "${-> corpusFile}", "${-> token1}", "${-> token2}"
+    } else {
+        args "${-> languageCode}", "${-> corpusFile}"
+        args += tokens.split().toList()
     }
     maxHeapSize = "2048m"
 }
