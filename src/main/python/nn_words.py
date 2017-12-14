@@ -9,6 +9,7 @@ import tensorflow as tf
 from sklearn.utils import shuffle
 
 import nn
+from repl import get_probabilities
 
 
 class NeuralNetwork:
@@ -135,7 +136,7 @@ class NeuralNetwork:
                 _ = self.sess.run([self.train_step], fd)  # train with next batch
             if e % 10 == 0:
                 self._print_accuracy(e)
-            if e % 100 == 0:
+            if e % 500 == 0:
                 print("--- VALIDATION PERFORMANCE -")
                 self.validate()
                 self.validate_error_detection()
@@ -222,7 +223,7 @@ class NeuralNetwork:
         print("precision:", float(tp)/(tp+fp))
         print("recall:", float(tp)/(tp+fn))
 
-    def validate_error_detection(self, threshold: float=0.5, verbose=False):
+    def validate_error_detection(self, suggestion_threshold: float=0.5, error_threshold: float=0.2, verbose=False):
         correct = list(np.zeros(self._num_outputs))
         incorrect = list(np.zeros(self._num_outputs))
         unclassified = list(np.zeros(self._num_outputs))
@@ -232,19 +233,20 @@ class NeuralNetwork:
 
         for i in range(len(self._db_validate["groundtruths"])):
             scores = self.get_score(self._db_validate["ngrams"][i])
+            probabilities = get_probabilities(scores)
             best_match = self.get_suggestion(self._db_validate["ngrams"][i])
             best_match_score = scores[best_match]
             ground_truth = np.argmax(self._db_validate["groundtruths"][i])
-            ground_truth_score = scores[ground_truth]
+            ground_truth_probability = probabilities[ground_truth]
 
-            if best_match_score > threshold and ground_truth_score < -threshold:
+            if best_match_score > suggestion_threshold and error_threshold > ground_truth_probability:
                 # suggest alternative
                 incorrect[ground_truth] = incorrect[ground_truth] + 1
                 if verbose:
                     print("false alarm:", " ".join(self._db_validate["ngrams_raw"][i]))
                 fp = fp + 1
                 fn = fn + 1
-            elif ground_truth_score > threshold:
+            elif ground_truth_probability > suggestion_threshold:
                 # ground truth will be suggested
                 correct[ground_truth] = correct[ground_truth] + 1
                 if verbose:
@@ -291,14 +293,14 @@ def main():
     network.train()
     network.save_weights(output_path)
     network.validate(verbose=False)
-    print(0)
-    network.validate_error_detection(verbose=False, threshold=0)
     print(.5)
-    network.validate_error_detection(verbose=False, threshold=.5)
-    print(1.0)
-    network.validate_error_detection(verbose=False, threshold=1.)
-    print(1.5)
-    network.validate_error_detection(verbose=True, threshold=1.5)
+    network.validate_error_detection(verbose=False, suggestion_threshold=.5, error_threshold=.5)
+    print(.4)
+    network.validate_error_detection(verbose=False, suggestion_threshold=.5, error_threshold=.4)
+    print(.3)
+    network.validate_error_detection(verbose=False, suggestion_threshold=.5, error_threshold=.3)
+    print(.2)
+    network.validate_error_detection(verbose=True, suggestion_threshold=.5, error_threshold=.2)
 
 
 if __name__ == '__main__':
