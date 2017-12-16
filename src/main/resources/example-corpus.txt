@@ -1,0 +1,14 @@
+I would like to go to school.
+We have a car, too. But I don't like to drive.
+I'd like to have a cat.
+She likes to go swmming, too.
+He is too heavy.
+Is he smart?
+There is a syntax error in your code. You have to fix it.
+I've forgotten to do my homework.
+Where is my key?
+You have to be careful.
+Many thanks to http://fscs.hhu.de/ for hosting the demo.
+The tasks aren't too difficult.
+You have to install Python in order to use the project.
+Haskell and Clojure are great languages, too.
