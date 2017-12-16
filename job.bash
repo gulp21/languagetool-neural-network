@@ -23,9 +23,9 @@ mkdir $output_path
 export LOGFILE=$output_path/$PBS_JOBNAME"."$PBS_JOBID".log"
 
 echo `date` create_training_files >> $LOGFILE
-./create_training_files.bash res_training/$lang/${lang}_news_2015_3M-sentences-raw.txt $subject1 $subject2 >> $LOGFILE
+./gradlew createNGramDatabase -PlanguageCode="en-US" -PcorpusFile="res_training/$lang/${lang}_news_2015_3M-sentences-raw.txt" -Ptokens="$subject1 $subject2" >> $LOGFILE
 
 echo `date` create_classifier >> $LOGFILE
-./create_classifier.bash res_training/$lang/embedding/dictionary.txt res_training/$lang/embedding/final_embeddings.txt $training_file $validate_file $output_path >> $LOGFILE
+python3 src/main/python/nn_words.py res_training/$lang/embedding/dictionary.txt res_training/$lang/embedding/final_embeddings.txt $training_file $validate_file $output_path >> $LOGFILE
 
 echo `date` finished, $output_path >> $LOGFILE
