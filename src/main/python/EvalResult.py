@@ -6,16 +6,25 @@ class EvalResult():
         self.fn = 0
 
     def add_tp(self):
-        self.tp = self.tp + 1
+        self.tp += 1
 
     def add_fp(self):
-        self.fp = self.fp + 1
+        self.fp += 1
 
     def add_tn(self):
-        self.tn = self.tn + 1
+        self.tn += 1
 
     def add_fn(self):
-        self.fn = self.fn + 1
+        self.fn += 1
+
+    def recall(self):
+        return self.tp / (self.tp + self.fn)
+
+    def precision(self):
+        return self.tp / (self.tp + self.fp)
 
     def __str__(self):
-        return str({"tp": self.tp, "fp": self.fp, "tn": self.tn, "fn": self.fn})
+        return "<tp: %d, fp: %d, tn: %d, fn: %d, p: %3.2f, r: %3.2f>\n" % (self.tp, self.fp, self.tn, self.fn, self.precision(), self.recall())
+
+    def __repr__(self):
+        return self.__str__()

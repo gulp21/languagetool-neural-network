@@ -1,6 +1,5 @@
 import sys
 from ast import literal_eval
-from enum import Enum
 
 import numpy as np
 
@@ -25,12 +24,22 @@ def get_probabilities(scores):
 
 
 def has_error(dictionary, embedding, W, b, ngram, subjects, suggestion_threshold=.5, error_threshold=.2) -> bool:
+    """
+    Parameters
+    ----------
+    suggestion_threshold:
+        if the probability of another token is higher than this, it is considered as possible suggestion
+    error_threshold:
+        if the probability for the used token is less than this, it is considered wrong
+    """
     words = np.concatenate(list(map(lambda token: get_word_representation(dictionary, embedding, token), np.delete(ngram, 2))))
     scores = words @ W + b
     probabilities = get_probabilities(scores)
     best_match_probability = probabilities[np.argmax(probabilities)]
     subject_index = subjects.index(ngram[2])
     subject_probability = probabilities[subject_index]
+
+    print("checked", ngram)
 
     if best_match_probability > suggestion_threshold and subject_probability < error_threshold:
         print("ERROR detected, suggestions:", get_rating(scores, subjects))

@@ -1,4 +1,4 @@
-from eval import get_relevant_ngrams, evaluate_ngrams
+from eval import get_relevant_ngrams, evaluate_ngrams, similar_words
 
 
 def test_get_single_relevant_ngram():
@@ -26,3 +26,13 @@ def test_evaluate_ngrams():
     assert eval_result.fp == 1
     assert eval_result.tn == 1
     assert eval_result.fn == 0
+
+
+def test_similar_words():
+    selected_words = similar_words("dein", ["sein", "dumme", "dein", "deinen", "dienend"])
+    assert selected_words == ["sein", "dein", "deinen"]
+
+
+def test_similar_short_words():
+    selected_words = similar_words("da", ["da", "dann", "der", "aus"])
+    assert selected_words == ["da", "dann", "der"]
