@@ -1,5 +1,6 @@
 import sys
 from ast import literal_eval
+from enum import Enum
 
 import numpy as np
 
@@ -23,7 +24,7 @@ def get_probabilities(scores):
     return 1 / (1 + np.exp(-np.array(scores)))
 
 
-def check(dictionary, embedding, W, b, ngram, subjects, suggestion_threshold=.5, error_threshold=.2):
+def has_error(dictionary, embedding, W, b, ngram, subjects, suggestion_threshold=.5, error_threshold=.2) -> bool:
     words = np.concatenate(list(map(lambda token: get_word_representation(dictionary, embedding, token), np.delete(ngram, 2))))
     scores = words @ W + b
     probabilities = get_probabilities(scores)
@@ -33,10 +34,13 @@ def check(dictionary, embedding, W, b, ngram, subjects, suggestion_threshold=.5,
 
     if best_match_probability > suggestion_threshold and subject_probability < error_threshold:
         print("ERROR detected, suggestions:", get_rating(scores, subjects))
+        return True
     elif subject_probability > suggestion_threshold:
         print("ok", get_rating(scores, subjects))
+        return False
     else:
         print("no decision", get_rating(scores, subjects))
+        return False
 
 
 def main():
@@ -59,7 +63,7 @@ def main():
 
     while True:
         ngram = input("5gram ").split(" ")
-        check(dictionary, embedding, W, b, ngram, subjects)
+        has_error(dictionary, embedding, W, b, ngram, subjects)
 
 
 if __name__ == '__main__':
