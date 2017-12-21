@@ -1,6 +1,5 @@
 import sys
 from ast import literal_eval
-from itertools import takewhile
 
 import numpy as np
 
@@ -11,12 +10,6 @@ def get_word_representation(dictionary, embedding, word):  # todo static
     else:
         print(" " + word + " is unknown")
         return embedding[dictionary["UNK"]]
-
-
-def get_rating(scores, subjects):
-    scored_suggestions = list(zip(scores, subjects))
-    scored_suggestions.sort(key=lambda x: x[0], reverse=True)
-    return scored_suggestions
 
 
 def get_rating(scores, subjects):
@@ -61,7 +54,7 @@ def main():
     W = np.loadtxt(W_path)
     b = np.loadtxt(b_path)
 
-    subjects = ["das", "dass", "dann", "den", "denn", "meine", "deine", "seine", "in", "ein", "an", "seid", "seit", "sei", "mein", "dein", "fein", "sein"]
+    subjects = ["als", "also", "da", "das", "dass", "de", "den", "denn", "die", "durch", "zur", "ihm", "im", "um", "nach", "noch", "war", "was"]
     print(subjects)
 
     while True:
