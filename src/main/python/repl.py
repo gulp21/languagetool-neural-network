@@ -1,6 +1,5 @@
 import sys
 from ast import literal_eval
-from itertools import takewhile
 
 import numpy as np
 
@@ -14,12 +13,6 @@ def get_word_representation(dictionary, embedding, word):  # todo static
 
 
 def get_rating(scores, subjects):
-    scored_suggestions = list(zip(scores, subjects))
-    scored_suggestions.sort(key=lambda x: x[0], reverse=True)
-    return scored_suggestions
-
-
-def get_rating(scores, subjects):
     probabilities = get_probabilities(scores)
     scored_suggestions = list(zip(probabilities, scores, subjects))
     scored_suggestions.sort(key=lambda x: x[0], reverse=True)
@@ -30,7 +23,15 @@ def get_probabilities(scores):
     return 1 / (1 + np.exp(-np.array(scores)))
 
 
-def check(dictionary, embedding, W, b, ngram, subjects, suggestion_threshold=.5, error_threshold=.2):
+def has_error(dictionary, embedding, W, b, ngram, subjects, suggestion_threshold=.5, error_threshold=.2) -> bool:
+    """
+    Parameters
+    ----------
+    suggestion_threshold:
+        if the probability of another token is higher than this, it is considered as possible suggestion
+    error_threshold:
+        if the probability for the used token is less than this, it is considered wrong
+    """
     words = np.concatenate(list(map(lambda token: get_word_representation(dictionary, embedding, token), np.delete(ngram, 2))))
     scores = np.matmul(words, W) + b
     probabilities = get_probabilities(scores)
@@ -38,12 +39,17 @@ def check(dictionary, embedding, W, b, ngram, subjects, suggestion_threshold=.5,
     subject_index = subjects.index(ngram[2])
     subject_probability = probabilities[subject_index]
 
+    print("checked", ngram)
+
     if best_match_probability > suggestion_threshold and subject_probability < error_threshold:
         print("ERROR detected, suggestions:", get_rating(scores, subjects))
+        return True
     elif subject_probability > suggestion_threshold:
         print("ok", get_rating(scores, subjects))
+        return False
     else:
         print("no decision", get_rating(scores, subjects))
+        return False
 
 
 def main():
@@ -61,12 +67,12 @@ def main():
     W = np.loadtxt(W_path)
     b = np.loadtxt(b_path)
 
-    subjects = ["das", "dass", "dann", "den", "denn", "meine", "deine", "seine", "in", "ein", "an", "seid", "seit", "sei", "mein", "dein", "fein", "sein"]
+    subjects = ["als", "also", "da", "das", "dass", "de", "den", "denn", "die", "durch", "zur", "ihm", "im", "um", "nach", "noch", "war", "was"]
     print(subjects)
 
     while True:
         ngram = input("5gram ").split(" ")
-        check(dictionary, embedding, W, b, ngram, subjects)
+        has_error(dictionary, embedding, W, b, ngram, subjects)
 
 
 if __name__ == '__main__':

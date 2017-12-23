@@ -7,10 +7,10 @@
 In case everything is already set up:
 
 ```bash
-./create_training_files.bash training-corpus.txt to too
-./create_classifier.bash dictionary.txt final_embeddings.txt /tmp/to_too_training.py /tmp/to_too_validate.py .
-# copy W_fc1.txt and b_fc1.txt to resources
-# edit nuralnetwork/confusion_sets.txt
+./gradlew createNGramDatabase -PlanguageCode="en-US" -PcorpusFile="training-corpus.txt" -Ptokens="to too"
+python3 src/main/python/nn_words.py dictionary.txt final_embeddings.txt /tmp/to_too_training.py /tmp/to_too_validate.py .
+# copy W_fc1.txt and b_fc1.txt to nuralnetwork/en/to_too
+# edit nuralnetwork/en/confusion_sets.txt
 # calibrate using NeuralNetworkRuleEvaluator language-code word2vec-dir RULE_ID corpus1.xml
 ```
 

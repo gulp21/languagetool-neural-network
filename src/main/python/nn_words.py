@@ -14,7 +14,7 @@ from repl import get_probabilities
 
 class NeuralNetwork:
     def __init__(self, dictionary_path: str, embedding_path: str, training_data_file: str, test_data_file: str,
-                 batch_size: int=1000, epochs: int=3000, use_hidden_layer: bool=False, num_inputs:int=4):
+                 batch_size: int=1000, epochs: int=3000, use_hidden_layer: bool=False, num_inputs: int=4):
         print(locals())
 
         self.use_hidden_layer = use_hidden_layer
@@ -126,6 +126,13 @@ class NeuralNetwork:
             batch[self.words[1]] = ngrams[:, 1]
             batch[self.words[2]] = ngrams[:, 3]
             batch[self.words[3]] = ngrams[:, 4]
+        elif self._num_inputs == 6:
+            batch[self.words[0]] = ngrams[:, 0]
+            batch[self.words[1]] = ngrams[:, 1]
+            batch[self.words[2]] = ngrams[:, 2]
+            batch[self.words[3]] = ngrams[:, 4]
+            batch[self.words[4]] = ngrams[:, 5]
+            batch[self.words[5]] = ngrams[:, 6]
 
     def train(self):
         steps = math.ceil(self._TRAINING_SAMPLES / self.batch_size)
@@ -163,7 +170,15 @@ class NeuralNetwork:
             return -1
 
     def get_score(self, ngram):
-        if self._num_inputs == 4:
+        if self._num_inputs == 6:
+            fd = {self.words[0]: [ngram[0]],
+                  self.words[1]: [ngram[1]],
+                  self.words[2]: [ngram[2]],
+                  self.words[3]: [ngram[4]],
+                  self.words[4]: [ngram[5]],
+                  self.words[5]: [ngram[6]],
+                  self.y_: [list(np.zeros(self._num_outputs))]}
+        elif self._num_inputs == 4:
             fd = {self.words[0]: [ngram[0]],
                   self.words[1]: [ngram[1]],
                   self.words[2]: [ngram[3]],
