@@ -14,7 +14,7 @@ from repl import get_probabilities
 
 class NeuralNetwork:
     def __init__(self, dictionary_path: str, embedding_path: str, training_data_file: str, test_data_file: str,
-                 batch_size: int=1000, epochs: int=3000, use_hidden_layer: bool=False, num_inputs: int=4):
+                 batch_size: int=1000, epochs: int=300, use_hidden_layer: bool=False):
         print(locals())
 
         self.use_hidden_layer = use_hidden_layer
@@ -28,12 +28,13 @@ class NeuralNetwork:
         print("embedding shape", np.shape(self.embedding))
 
         self._input_size = np.shape(self.embedding)[1]
-        self._num_inputs = num_inputs
 
         self._db = self.get_db(training_data_file)
         self._TRAINING_SAMPLES = len(self._db["groundtruths"])
         self._num_outputs = len(self._db["groundtruths"][0])
         self._current_batch_number = 0
+
+        self._num_inputs = len(self._db["ngrams"][0]) - 1
 
         self._db_validate = self.get_db(test_data_file)
 
@@ -103,7 +104,7 @@ class NeuralNetwork:
         end_index = (self._current_batch_number + 1) * self.batch_size
         batch = dict()
         ngrams = self._db["ngrams"][start_index:end_index]
-        self.assign_4gram_to_batch(batch, ngrams)
+        self.assign_ngram_to_batch(batch, ngrams)
         batch[self.y_] = self._db["groundtruths"][start_index:end_index]
         self._current_batch_number = self._current_batch_number + 1
         # print("d" + str(len(batch[self.word1])))
@@ -112,27 +113,15 @@ class NeuralNetwork:
     def get_all_training_data(self):
         batch = dict()
         ngrams = self._db["ngrams"][:]
-        self.assign_4gram_to_batch(batch, ngrams)
+        self.assign_ngram_to_batch(batch, ngrams)
         batch[self.y_] = self._db["groundtruths"][:]
         # print("d" + str(len(batch[self.word1])))
         return batch
 
-    def assign_4gram_to_batch(self, batch, ngrams):
-        if self._num_inputs == 2:
-            batch[self.words[0]] = ngrams[:, 1]
-            batch[self.words[1]] = ngrams[:, 3]
-        elif self._num_inputs == 4:
-            batch[self.words[0]] = ngrams[:, 0]
-            batch[self.words[1]] = ngrams[:, 1]
-            batch[self.words[2]] = ngrams[:, 3]
-            batch[self.words[3]] = ngrams[:, 4]
-        elif self._num_inputs == 6:
-            batch[self.words[0]] = ngrams[:, 0]
-            batch[self.words[1]] = ngrams[:, 1]
-            batch[self.words[2]] = ngrams[:, 2]
-            batch[self.words[3]] = ngrams[:, 4]
-            batch[self.words[4]] = ngrams[:, 5]
-            batch[self.words[5]] = ngrams[:, 6]
+    def assign_ngram_to_batch(self, batch, ngrams):
+        for idx, word in enumerate(self.words):
+            i = self.context_index_for_ngram_position(idx)
+            batch[word] = ngrams[:, i]
 
     def train(self):
         steps = math.ceil(self._TRAINING_SAMPLES / self.batch_size)
@@ -170,26 +159,20 @@ class NeuralNetwork:
             return -1
 
     def get_score(self, ngram):
-        if self._num_inputs == 6:
-            fd = {self.words[0]: [ngram[0]],
-                  self.words[1]: [ngram[1]],
-                  self.words[2]: [ngram[2]],
-                  self.words[3]: [ngram[4]],
-                  self.words[4]: [ngram[5]],
-                  self.words[5]: [ngram[6]],
-                  self.y_: [list(np.zeros(self._num_outputs))]}
-        elif self._num_inputs == 4:
-            fd = {self.words[0]: [ngram[0]],
-                  self.words[1]: [ngram[1]],
-                  self.words[2]: [ngram[3]],
-                  self.words[3]: [ngram[4]],
-                  self.y_: [list(np.zeros(self._num_outputs))]}
-        elif self._num_inputs == 2:
-            fd = {self.words[0]: [ngram[1]],
-                  self.words[1]: [ngram[3]],
-                  self.y_: [list(np.zeros(self._num_outputs))]}
+        fd = {self.y_: [list(np.zeros(self._num_outputs))]}
+        for idx, word in enumerate(self.words):
+            i = self.context_index_for_ngram_position(idx)
+            fd[word] = [ngram[i]]
         scores = self.y.eval(fd)[0]
         return scores
+
+    def context_index_for_ngram_position(self, idx: int) -> int:
+        """for a position in a ngram, return idx if idx < floor(n/2), idx+1 otherwise"""
+        if idx < int(self._num_inputs / 2):
+            i = idx
+        else:
+            i = idx + 1
+        return i
 
     def validate(self, verbose=False):
         correct = list(np.zeros(self._num_outputs))
