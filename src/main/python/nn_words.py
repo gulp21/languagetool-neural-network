@@ -40,6 +40,8 @@ class NeuralNetwork:
 
         self.setup_net()
 
+        print("determined parameters: num_inputs=%d, input_size=%d" % (self._num_inputs, self._input_size))
+
     def setup_net(self):
         with tf.name_scope('input'):
             self.words = []
