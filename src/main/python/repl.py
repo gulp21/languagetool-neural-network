@@ -32,7 +32,7 @@ def get_probabilities(scores):
 
 def check(dictionary, embedding, W, b, ngram, subjects, suggestion_threshold=.5, error_threshold=.2):
     words = np.concatenate(list(map(lambda token: get_word_representation(dictionary, embedding, token), np.delete(ngram, 2))))
-    scores = words @ W + b
+    scores = np.matmul(words, W) + b
     probabilities = get_probabilities(scores)
     best_match_probability = probabilities[np.argmax(probabilities)]
     subject_index = subjects.index(ngram[2])
