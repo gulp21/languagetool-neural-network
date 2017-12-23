@@ -73,7 +73,10 @@ def main():
 
     while True:
         ngram = input("ngram ").split(" ")
-        has_error(dictionary, embedding, W, b, ngram, subjects, error_threshold=.65, suggestion_threshold=.65)
+        try:
+            has_error(dictionary, embedding, W, b, ngram, subjects, error_threshold=.65, suggestion_threshold=.65)
+        except ValueError as e:
+            print(e)
 
 
 if __name__ == '__main__':
