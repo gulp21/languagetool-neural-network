@@ -32,11 +32,12 @@ def has_error(dictionary, embedding, W, b, ngram, subjects, suggestion_threshold
     error_threshold:
         if the probability for the used token is less than this, it is considered wrong
     """
-    words = np.concatenate(list(map(lambda token: get_word_representation(dictionary, embedding, token), np.delete(ngram, 2))))
+    middle = int(len(ngram) / 2)
+    words = np.concatenate(list(map(lambda token: get_word_representation(dictionary, embedding, token), np.delete(ngram, middle))))
     scores = np.matmul(words, W) + b
     probabilities = get_probabilities(scores)
     best_match_probability = probabilities[np.argmax(probabilities)]
-    subject_index = subjects.index(ngram[2])
+    subject_index = subjects.index(ngram[middle])
     subject_probability = probabilities[subject_index]
 
     print("checked", ngram)
@@ -71,8 +72,8 @@ def main():
     print(subjects)
 
     while True:
-        ngram = input("5gram ").split(" ")
-        has_error(dictionary, embedding, W, b, ngram, subjects)
+        ngram = input("ngram ").split(" ")
+        has_error(dictionary, embedding, W, b, ngram, subjects, error_threshold=.65, suggestion_threshold=.65)
 
 
 if __name__ == '__main__':

@@ -15,18 +15,20 @@ def evaluate_ngrams(ngrams: [[str]], subjects: [str],
     eval_result = EvalResult()
     substitutions = create_substitution_dict(subjects)
     for ngram in ngrams:
-        for substitution in substitutions[ngram[2]]:
+        middle = int(len(ngram) / 2)
+        middle_word = ngram[middle]
+        for substitution in substitutions[middle_word]:
             eval_ngram = ngram[:]
-            eval_ngram[2] = substitution
+            eval_ngram[middle] = substitution
             error_detected = check_function(eval_ngram)
-            if not error_detected and substitution == ngram[2]:
+            if not error_detected and substitution == middle_word:
                 eval_result.add_tn()
-            elif error_detected and substitution == ngram[2]:
+            elif error_detected and substitution == middle_word:
                 eval_result.add_fp()
                 print("false positive:", eval_ngram)
-            elif not error_detected and substitution != ngram[2]:
+            elif not error_detected and substitution != middle_word:
                 eval_result.add_fn()
-            elif error_detected and substitution != ngram[2]:
+            elif error_detected and substitution != middle_word:
                 eval_result.add_tp()
     return eval_result
 
@@ -43,9 +45,9 @@ def get_relevant_ngrams(sentences: str, subjects: [str], n: int=5) -> [[str]]:
 
 def similar_words(word: str, words: List[str]):
     if len(word) < 4:
-        max_distance = 2
+        max_distance = 1
     else:
-        max_distance = 3
+        max_distance = 1
     return list(filter(lambda w: edit_distance(word, w, substitution_cost=1, transpositions=True) <= max_distance,
                        words))
 
@@ -69,14 +71,22 @@ def main():
     W = np.loadtxt(W_path)
     b = np.loadtxt(b_path)
 
+    context_size = W.shape[0]/embedding.shape[1]
+
     subjects = ["als", "also", "da", "das", "dass", "de", "den", "denn", "die", "durch", "zur", "ihm", "im", "um", "nach", "noch", "war", "was"]
     print(subjects)
 
-    sentences = "Ich glaube , dass es morgen schneit , denn es ist sehr kalt . Der Spieleabend beginnt um 17 Uhr im Raum 25 . Ich war gestern zuhause . Es ist nach dem Öffnen 3 Tage lang haltbar . Wie war dein Urlaub ? Und wie war der Film ? Wir sind da im Urlaub ."
-    ngrams = get_relevant_ngrams(sentences, subjects)
+    # eval_subjects = subjects
+    eval_subjects = ["das", "dass"]
 
-    eval_results = parmap(lambda t: evaluate_ngrams(ngrams, subjects, lambda ngram: has_error(dictionary, embedding, W, b, ngram, subjects, error_threshold=t, suggestion_threshold=t)),
-                          [.1, .2, .3, .4, .5, .6, .7, .8, .9])
+    with open("/tmp/tokens") as file:
+        sentences = file.read()
+
+    ngrams = get_relevant_ngrams(sentences, eval_subjects, n=context_size+1)
+
+    eval_results = parmap(lambda t: evaluate_ngrams(ngrams, eval_subjects, lambda ngram: has_error(dictionary, embedding, W, b, ngram, subjects, error_threshold=t, suggestion_threshold=t)),
+                          np.arange(0, 1, .05))
+                          # [.3])
     print(eval_results)
 
 
