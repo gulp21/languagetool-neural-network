@@ -18,12 +18,14 @@ class EvalResult():
         self.fn += 1
 
     def recall(self):
-        return self.tp / (self.tp + self.fn)
+        if (self.tp + self.fn) > 0:
+            return self.tp / (self.tp + self.fn)
+        return 0
 
     def precision(self):
         if (self.tp + self.fp) > 0:
             return self.tp / (self.tp + self.fp)
-        return 0
+        return 1
 
     def __str__(self):
         return "<tp: %d, fp: %d, tn: %d, fn: %d, p: %3.2f, r: %3.2f>\n" % (self.tp, self.fp, self.tn, self.fn, self.precision(), self.recall())
