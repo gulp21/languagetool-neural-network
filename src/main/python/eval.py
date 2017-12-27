@@ -74,10 +74,11 @@ def main():
     context_size = W.shape[0]/embedding.shape[1]
 
     subjects = ["als", "also", "da", "das", "dass", "de", "den", "denn", "die", "durch", "zur", "ihm", "im", "um", "nach", "noch", "war", "was"]
+    # subjects = ["and" "end" "as" "at" "is" "do" "for" "four" "form" "from" "he" "if" "is" "its" "it" "no" "now" "on" "one" "same" "some" "than" "that" "then" "their" "there" "them" "the" "they" "to" "was" "way" "were" "where"]
     print(subjects)
 
     # eval_subjects = subjects
-    eval_subjects = ["das", "dass"]
+    eval_subjects = ["im", "um"]
 
     with open("/tmp/tokens") as file:
         sentences = file.read()
