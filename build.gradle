@@ -21,7 +21,7 @@ task createNGramDatabase(type:JavaExec) {
             args += tokens.split().toList()
         }
     }
-    maxHeapSize = "2048m"
+    maxHeapSize = "10000m"
 }
 
 repositories {
