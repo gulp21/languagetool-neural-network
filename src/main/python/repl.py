@@ -3,6 +3,8 @@ from ast import literal_eval
 
 import numpy as np
 
+from LayeredScorer import LayeredScorer
+
 
 def get_word_representation(dictionary, embedding, word):  # todo static
     if word in dictionary:
@@ -23,7 +25,7 @@ def get_probabilities(scores):
     return 1 / (1 + np.exp(-np.array(scores)))
 
 
-def has_error(dictionary, embedding, W, b, ngram, subjects, suggestion_threshold=.5, error_threshold=.2) -> bool:
+def has_error(dictionary, embedding, scorer: LayeredScorer, ngram, subjects, suggestion_threshold=.5, error_threshold=.2) -> bool:
     """
     Parameters
     ----------
@@ -34,7 +36,7 @@ def has_error(dictionary, embedding, W, b, ngram, subjects, suggestion_threshold
     """
     middle = int(len(ngram) / 2)
     words = np.concatenate(list(map(lambda token: get_word_representation(dictionary, embedding, token), np.delete(ngram, middle))))
-    scores = np.matmul(words, W) + b
+    scores = scorer.scores(words)
     probabilities = get_probabilities(scores)
     best_match_probability = probabilities[np.argmax(probabilities)]
     subject_index = subjects.index(ngram[middle])
@@ -54,27 +56,26 @@ def has_error(dictionary, embedding, W, b, ngram, subjects, suggestion_threshold
 
 
 def main():
-    if len(sys.argv) != 5:
-        raise ValueError("Expected dict, finalembedding, W, b")
+    if len(sys.argv) != 4:
+        raise ValueError("Expected dict, finalembedding, weights_path")
 
     dictionary_path = sys.argv[1]
     embedding_path = sys.argv[2]
-    W_path = sys.argv[3]
-    b_path = sys.argv[4]
+    weights_path = sys.argv[3]
 
     with open(dictionary_path) as dictionary_file:
         dictionary = literal_eval(dictionary_file.read())
     embedding = np.loadtxt(embedding_path)
-    W = np.loadtxt(W_path)
-    b = np.loadtxt(b_path)
 
     subjects = ["als", "also", "da", "das", "dass", "de", "den", "denn", "die", "durch", "zur", "ihm", "im", "um", "nach", "noch", "war", "was"]
+    # subjects = ["and", "end", "as", "at", "is", "do", "for", "four", "form", "from", "he", "if", "is", "its", "it", "no", "now", "on", "one", "same", "some", "than", "that", "then", "their", "there", "them", "the", "they", "to", "was", "way", "were", "where"]
     print(subjects)
 
     while True:
         ngram = input("ngram ").split(" ")
         try:
-            has_error(dictionary, embedding, W, b, ngram, subjects, error_threshold=.65, suggestion_threshold=.65)
+            scorer = LayeredScorer(weights_path)
+            has_error(dictionary, embedding, scorer, ngram, subjects, error_threshold=.65, suggestion_threshold=.65)
         except ValueError as e:
             print(e)
 

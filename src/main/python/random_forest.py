@@ -5,6 +5,9 @@ from ast import literal_eval
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import shuffle
 
 from repl import get_probabilities
@@ -12,7 +15,7 @@ from repl import get_probabilities
 
 class RandomForest:
     def __init__(self, dictionary_path: str, embedding_path: str, training_data_file: str, test_data_file: str,
-                 n_estimators: int=80):
+                 n_estimators: int=120):
         print(locals())
 
         with open(dictionary_path) as dictionary_file:

@@ -6,6 +6,7 @@ import numpy as np
 from nltk import edit_distance
 
 from EvalResult import EvalResult
+from LayeredScorer import LayeredScorer
 from parallel import parmap
 from repl import has_error
 
@@ -57,36 +58,32 @@ def create_substitution_dict(subjects: List[str]) -> dict:
 
 
 def main():
-    if len(sys.argv) != 5:
+    if len(sys.argv) != 4:
         raise ValueError("Expected dict, finalembedding, W, b")
 
     dictionary_path = sys.argv[1]
     embedding_path = sys.argv[2]
-    W_path = sys.argv[3]
-    b_path = sys.argv[4]
+    weights_path = sys.argv[3]
 
     with open(dictionary_path) as dictionary_file:
         dictionary = literal_eval(dictionary_file.read())
     embedding = np.loadtxt(embedding_path)
-    W = np.loadtxt(W_path)
-    b = np.loadtxt(b_path)
-
-    context_size = W.shape[0]/embedding.shape[1]
 
     subjects = ["als", "also", "da", "das", "dass", "de", "den", "denn", "die", "durch", "zur", "ihm", "im", "um", "nach", "noch", "war", "was"]
-    # subjects = ["and" "end" "as" "at" "is" "do" "for" "four" "form" "from" "he" "if" "is" "its" "it" "no" "now" "on" "one" "same" "some" "than" "that" "then" "their" "there" "them" "the" "they" "to" "was" "way" "were" "where"]
+    # subjects = ["and", "end", "as", "at", "is", "do", "for", "four", "form", "from", "he", "if", "is", "its", "it", "no", "now", "on", "one", "same", "some", "than", "that", "then", "their", "there", "them", "the", "they", "to", "was", "way", "were", "where"]
     print(subjects)
 
     # eval_subjects = subjects
-    eval_subjects = ["im", "um"]
+    eval_subjects = ["das", "dass"]
 
-    with open("/tmp/tokens") as file:
+    with open("/tmp/tokens-de") as file:
         sentences = file.read()
 
-    ngrams = get_relevant_ngrams(sentences, eval_subjects, n=context_size+1)
+    scorer = LayeredScorer(weights_path)
+    ngrams = get_relevant_ngrams(sentences, eval_subjects, n=scorer.context_size(embedding.shape[1])+1)
 
-    eval_results = parmap(lambda t: evaluate_ngrams(ngrams, eval_subjects, lambda ngram: has_error(dictionary, embedding, W, b, ngram, subjects, error_threshold=t, suggestion_threshold=t)),
-                          np.arange(0, 1, .05))
+    eval_results = parmap(lambda t: evaluate_ngrams(ngrams, eval_subjects, lambda ngram: has_error(dictionary, embedding, scorer, ngram, subjects, error_threshold=t, suggestion_threshold=t)),
+                          np.arange(0, 1, .025))
                           # [.3])
     print(eval_results)
 
