@@ -14,11 +14,13 @@ from repl import get_probabilities
 
 class NeuralNetwork:
     def __init__(self, dictionary_path: str, embedding_path: str, training_data_file: str, test_data_file: str,
-                 batch_size: int=1000, epochs: int=300, use_hidden_layer: bool=False):
+                 batch_size: int=1000, epochs: int=900, use_hidden_layer: bool=False, use_conv_layer: bool=False):
         print(locals())
 
         self.use_hidden_layer = use_hidden_layer
+        self.use_conv_layer = use_conv_layer
         self.hidden_layer_size = 8
+        self.num_conv_filters = 32
         self.batch_size = batch_size
         self.epochs = epochs
 
@@ -52,6 +54,16 @@ class NeuralNetwork:
         with tf.name_scope('ground-truth'):
             self.y_ = tf.placeholder(tf.float32, shape=[None, self._num_outputs])
 
+        if self.use_conv_layer:
+            with tf.name_scope('conv_layer'):
+                pooling_positions = 3
+                x_image = tf.reshape(x, [-1, self._input_size, self._num_inputs, 1])
+                self.W_conv1 = nn.weight_variable([self._input_size, self._num_inputs - (pooling_positions - 1), 1, self.num_conv_filters])
+                self.b_conv1 = nn.bias_variable([self.num_conv_filters])
+                h_conv1 = tf.nn.relu(nn.conv2d(x_image, self.W_conv1) + self.b_conv1)
+                h_pool1 = nn.max_pool(h_conv1, self._input_size, self._num_inputs - (pooling_positions - 1))
+                h_pool1_flat = tf.reshape(h_pool1, [-1, self.num_conv_filters * pooling_positions])
+
         if self.use_hidden_layer:
             with tf.name_scope('hidden_layer'):
                 self.W_fc1 = nn.weight_variable([self._num_inputs * self._input_size, self._num_inputs * self.hidden_layer_size])
@@ -63,6 +75,10 @@ class NeuralNetwork:
                 self.W_fc2 = nn.weight_variable([self._num_inputs * self.hidden_layer_size, self._num_outputs])
                 self.b_fc2 = nn.bias_variable([self._num_outputs])
                 self.y = tf.matmul(hidden_layer, self.W_fc2) + self.b_fc2
+            elif self.use_conv_layer:
+                self.W_fc2 = nn.weight_variable([self.num_conv_filters * pooling_positions, self._num_outputs])
+                self.b_fc2 = nn.bias_variable([self._num_outputs])
+                self.y = tf.matmul(h_pool1_flat, self.W_fc2) + self.b_fc2
             else:
                 self.W_fc1 = nn.weight_variable([self._num_inputs * self._input_size, self._num_outputs])
                 self.b_fc1 = nn.bias_variable([self._num_outputs])
@@ -134,7 +150,7 @@ class NeuralNetwork:
                 _ = self.sess.run([self.train_step], fd)  # train with next batch
             if e % 10 == 0:
                 self._print_accuracy(e)
-            if e % 500 == 0:
+            if e % 1000 == 0:
                 print("--- VALIDATION PERFORMANCE -")
                 self.validate()
                 self.validate_error_detection()
@@ -147,9 +163,13 @@ class NeuralNetwork:
         sys.stdout.flush()
 
     def save_weights(self, output_path):
-        np.savetxt(output_path + "/W_fc1.txt", self.W_fc1.eval())
-        np.savetxt(output_path + "/b_fc1.txt", self.b_fc1.eval())
-        if self.use_hidden_layer:
+        if self.use_conv_layer:
+            np.savetxt(output_path + "/b_conv1.txt", self.b_conv1.eval())
+            np.savetxt(output_path + "/W_conv1.txt", self.W_conv1.eval())
+        else:
+            np.savetxt(output_path + "/W_fc1.txt", self.W_fc1.eval())
+            np.savetxt(output_path + "/b_fc1.txt", self.b_fc1.eval())
+        if self.use_hidden_layer or self.use_conv_layer:
             np.savetxt(output_path + "/b_fc2.txt", self.b_fc2.eval())
             np.savetxt(output_path + "/W_fc2.txt", self.W_fc2.eval())
 
@@ -177,6 +197,8 @@ class NeuralNetwork:
         return i
 
     def validate(self, verbose=False):
+        print("--- Validation of word prediction")
+
         correct = list(np.zeros(self._num_outputs))
         incorrect = list(np.zeros(self._num_outputs))
         unclassified = list(np.zeros(self._num_outputs))
@@ -220,10 +242,13 @@ class NeuralNetwork:
         print("tn", tn)
         print("fp", fp)
         print("fn", fn)
-        print("precision:", float(tp)/(tp+fp))
-        print("recall:", float(tp)/(tp+fn))
+        print("precision:", float(tp)/(tp+fp) if (tp+fp) > 0 else 1)
+        print("recall:", float(tp)/(tp+fn) if (tp+fn) > 0 else 0)
 
     def validate_error_detection(self, suggestion_threshold: float=0.5, error_threshold: float=0.2, verbose=False):
+        print("--- Error Detection Validation: suggestion_threshold %4.2f, error_threshold %4.2f"
+              % (suggestion_threshold, error_threshold))
+
         correct = list(np.zeros(self._num_outputs))
         incorrect = list(np.zeros(self._num_outputs))
         unclassified = list(np.zeros(self._num_outputs))
@@ -293,13 +318,9 @@ def main():
     network.train()
     network.save_weights(output_path)
     network.validate(verbose=False)
-    print(.5)
     network.validate_error_detection(verbose=False, suggestion_threshold=.5, error_threshold=.5)
-    print(.4)
     network.validate_error_detection(verbose=False, suggestion_threshold=.5, error_threshold=.4)
-    print(.3)
     network.validate_error_detection(verbose=False, suggestion_threshold=.5, error_threshold=.3)
-    print(.2)
     network.validate_error_detection(verbose=True, suggestion_threshold=.5, error_threshold=.2)
 
 
