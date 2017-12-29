@@ -164,8 +164,8 @@ class NeuralNetwork:
 
     def save_weights(self, output_path):
         if self.use_conv_layer:
-            np.savetxt(output_path + "/b_conv1.txt", self.b_conv1.eval())
-            np.savetxt(output_path + "/W_conv1.txt", self.W_conv1.eval())
+            nn.write_4dmat(output_path + "/W_conv1.txt", tf.transpose(self.W_conv1, (3, 0, 1, 2)).eval())
+            nn.write_4dmat(output_path + "/b_conv1.txt", self.b_conv1.eval())
         else:
             np.savetxt(output_path + "/W_fc1.txt", self.W_fc1.eval())
             np.savetxt(output_path + "/b_fc1.txt", self.b_fc1.eval())
