@@ -173,9 +173,9 @@ class NeuralNetwork:
             np.savetxt(output_path + "/b_fc2.txt", self.b_fc2.eval())
             np.savetxt(output_path + "/W_fc2.txt", self.W_fc2.eval())
 
-    def get_suggestion(self, ngram):
+    def get_suggestion(self, ngram, threshold=.5):
         scores = self.get_score(ngram)
-        if np.max(scores) > .5 and np.min(scores) < -.5:
+        if np.max(scores) > threshold and np.min(scores) < -threshold:
             return np.argmax(scores)
         else:
             return -1
@@ -196,8 +196,8 @@ class NeuralNetwork:
             i = idx + 1
         return i
 
-    def validate(self, verbose=False):
-        print("--- Validation of word prediction")
+    def validate(self, verbose=False, threshold=.5):
+        print("--- Validation of word prediction, threshold", threshold)
 
         correct = list(np.zeros(self._num_outputs))
         incorrect = list(np.zeros(self._num_outputs))
@@ -208,7 +208,7 @@ class NeuralNetwork:
         fn = 0
 
         for i in range(len(self._db_validate["groundtruths"])):
-            suggestion = self.get_suggestion(self._db_validate["ngrams"][i])
+            suggestion = self.get_suggestion(self._db_validate["ngrams"][i], threshold=threshold)
             ground_truth = np.argmax(self._db_validate["groundtruths"][i])
             if suggestion == -1:
                 unclassified[ground_truth] = unclassified[ground_truth] + 1
@@ -317,7 +317,7 @@ def main():
     network = NeuralNetwork(dictionary_path, embedding_path, training_data_file, test_data_file)
     network.train()
     network.save_weights(output_path)
-    network.validate(verbose=False)
+    network.validate(verbose=False, threshold=.5)
     network.validate_error_detection(verbose=False, suggestion_threshold=.5, error_threshold=.5)
     network.validate_error_detection(verbose=False, suggestion_threshold=.5, error_threshold=.4)
     network.validate_error_detection(verbose=False, suggestion_threshold=.5, error_threshold=.3)
