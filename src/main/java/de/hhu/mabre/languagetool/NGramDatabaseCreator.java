@@ -21,6 +21,7 @@ import static de.hhu.mabre.languagetool.SubsetType.VALIDATION;
 public class NGramDatabaseCreator {
 
     private static final int N = 5;
+    private static final int AVERAGE_WORD_LENGTH = 10;
 
     public static void main(String[] args) {
         if(args.length < 4) {
@@ -145,6 +146,48 @@ public class NGramDatabaseCreator {
             }
         }
         return nGrams;
+    }
+
+    static ArrayList<NGram> getRelevantCharNGrams(List<String> tokens, List<String> subjectTokens) {
+        ArrayList<NGram> nGrams;
+        nGrams = new ArrayList<>();
+
+        final int end = tokens.size();
+        final int subjectLength = subjectTokens.size();
+        for(int i = 1; i <= end - subjectLength; i++) {
+            if (tokens.subList(i, i+subjectLength).equals(subjectTokens)) {
+                List<String> ngram = new LinkedList<>();
+                try {
+                    ngram.addAll(getNCharsBefore(tokens, i, N / 2 * AVERAGE_WORD_LENGTH));
+                    ngram.add(subjectTokens.stream().collect(Collectors.joining(" ")));
+                    ngram.addAll(getNCharsAfter(tokens, i, N / 2 * AVERAGE_WORD_LENGTH));
+                    nGrams.add(new NGram(ngram));
+                } catch(ArrayIndexOutOfBoundsException e) {
+                    // ok
+                }
+            }
+        }
+        return nGrams;
+    }
+
+    private static List<String> getNCharsBefore(List<String> tokens, int idx, int n) {
+        int i = idx - 1;
+        String chars = tokens.get(i);
+        while (chars.length() < n) {
+            i -= 1;
+            chars = tokens.get(i) + " " + chars;
+        }
+        return chars.chars().mapToObj(c -> String.valueOf((char) c)).skip(chars.length() - n).collect(Collectors.toList());
+    }
+
+    private static List<String> getNCharsAfter(List<String> tokens, int idx, int n) {
+        int i = idx + 1;
+        String chars = tokens.get(i);
+        while (chars.length() < n) {
+            i += 1;
+            chars = chars + " " + tokens.get(i);
+        }
+        return chars.chars().mapToObj(c -> String.valueOf((char) c)).limit(n).collect(Collectors.toList());
     }
 
 }

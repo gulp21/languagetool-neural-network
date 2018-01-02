@@ -92,4 +92,10 @@ public class NGramDatabaseCreatorTest extends TestCase {
         assertEquals(7, sets.get(TRAINING).split("\n").length);
     }
 
+    public void testGetRelevantCharNGrams() {
+        List<NGram> nGrams = getRelevantCharNGrams(Arrays.asList("Because", "we", "want", "to", "test", "the", "implementation", "to", "test"), Collections.singletonList("to"));
+        List<NGram> expectedNGrams = Collections.singletonList(new NGram("a", "u", "s", "e", " ", "w", "e", " ", "w", "a", "n", "t", "to", "t", "e", "s", "t", " ", "t", "h", "e", " ", "i", "m", "p"));
+        assertEquals(expectedNGrams, nGrams);
+    }
+
 }
