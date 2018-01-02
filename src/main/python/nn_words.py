@@ -296,8 +296,8 @@ class NeuralNetwork:
         print("tp", tp)
         print("fp", fp)
         print("fn", fn)
-        print("precision:", float(tp)/(tp+fp))
-        print("recall:", float(tp)/(tp+fn))
+        print("precision:", float(tp)/(tp+fp) if (tp+fp) > 0 else 1)
+        print("recall:", float(tp)/(tp+fn) if (tp+fn) > 0 else 0)
         accuracy = list(map(lambda c, i: c/(c+i), correct, incorrect))
         print("accuracy:", accuracy)
 
