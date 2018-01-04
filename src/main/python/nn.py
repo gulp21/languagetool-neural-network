@@ -10,12 +10,12 @@ def bias_variable(shape):
     return tf.Variable(initial)
 
 
-def conv2d(x, W):
-    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+def conv2d(x, W, padding: str="SAME"):
+    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding=padding)
 
 
-def max_pool(x, w, h):
-    return tf.nn.max_pool(x, ksize=[1, w, h, 1], strides=[1, 1, 1, 1], padding='VALID')
+def max_pool(x, l):
+    return tf.nn.max_pool(x, ksize=[1, l, 1, 1], strides=[1, 1, 1, 1], padding='VALID')
 
 
 def write_4dmat(path: str, mat):

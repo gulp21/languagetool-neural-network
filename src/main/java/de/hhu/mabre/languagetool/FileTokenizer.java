@@ -1,6 +1,7 @@
 package de.hhu.mabre.languagetool;
 
 import org.languagetool.Language;
+import org.languagetool.tokenizers.SentenceTokenizer;
 import org.languagetool.tokenizers.Tokenizer;
 
 import java.io.IOException;
@@ -53,6 +54,10 @@ public class FileTokenizer {
     static List<String> tokenize(String languageCode, String text) {
         System.out.println("Tokenizing");
         Tokenizer tokenizer = getTokenizer(languageCode);
+        return tokenize(tokenizer, text);
+    }
+
+    private static List<String> tokenize(Tokenizer tokenizer, String text) {
         List<String> tokenizedText = tokenizer.tokenize(text);
         return tokenizedText.stream().filter(token -> !token.trim().isEmpty()).collect(Collectors.toList());
     }
@@ -60,5 +65,13 @@ public class FileTokenizer {
     private static Tokenizer getTokenizer(String languageCode) {
         Language language = getLanguageForShortCode(languageCode);
         return language.getWordTokenizer();
+    }
+
+    static List<List<String>> tokenizedSentences(String languageCode, String text) {
+        Language language = getLanguageForShortCode(languageCode);
+        SentenceTokenizer sentenceTokenizer = language.getSentenceTokenizer();
+        List<String> sentences = sentenceTokenizer.tokenize(text);
+        Tokenizer tokenizer = getTokenizer(languageCode);
+        return sentences.stream().map(sentence -> tokenize(tokenizer, sentence)).collect(Collectors.toList());
     }
 }
