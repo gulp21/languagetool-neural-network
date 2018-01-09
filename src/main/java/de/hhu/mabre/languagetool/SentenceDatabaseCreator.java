@@ -44,8 +44,8 @@ public class SentenceDatabaseCreator {
 
         String basename = System.getProperty("java.io.tmpdir") + File.separator + String.join("_", subjects);
 
-        writeDatabase(databaseFromSentences(languageCode, sets.get(TRAINING), subjects, UNDERSAMPLE), basename + "_training.py");
-        writeDatabase(databaseFromSentences(languageCode, sets.get(VALIDATION), subjects, NONE), basename +"_validate.py");
+        writeDatabase(databaseFromSentences(languageCode, sets.get(TRAINING), subjects, UNDERSAMPLE), basename + "_training.json");
+        writeDatabase(databaseFromSentences(languageCode, sets.get(VALIDATION), subjects, NONE), basename +"_validate.json");
     }
 
     static <T> EnumMap<SubsetType, List<T>> randomlySplit(List<T> items, int validatePercentage) {
@@ -60,16 +60,16 @@ public class SentenceDatabaseCreator {
         return sets;
     }
 
-    private static void writeDatabase(PythonDict pythonDict, String filename) { // TODO extract to PythonDict
+    private static void writeDatabase(SentencesDict dict, String filename) {
         try {
-            Files.write(Paths.get(filename), Collections.singletonList(pythonDict.toString()));
+            Files.write(Paths.get(filename), Collections.singletonList(dict.toJson()));
             System.out.println(filename + " created");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    static PythonDict databaseFromSentences(String languageCode, List<List<String>> tokenizedSentences, List<String> subjects, SamplingMode samplingMode) {
+    static SentencesDict databaseFromSentences(String languageCode, List<List<String>> tokenizedSentences, List<String> subjects, SamplingMode samplingMode) {
         List<List<String>> tokenizedSubjects = new ArrayList<>();
         for (String subject: subjects) {
             tokenizedSubjects.add(tokenize(languageCode, subject));
@@ -77,21 +77,25 @@ public class SentenceDatabaseCreator {
         return createDatabase(tokenizedSentences, tokenizedSubjects, samplingMode);
     }
 
-    static PythonDict createDatabase(List<List<String>> tokenizedSentences, List<List<String>> subjects, SamplingMode samplingMode) {
-        ArrayList<ArrayList<NGram>> nGrams = new ArrayList<>();
+    static SentencesDict createDatabase(List<List<String>> tokenizedSentences, List<List<String>> subjects, SamplingMode samplingMode) {
+        List<List<List<String>>> sentenceStarts = new ArrayList<>();
+        List<List<List<String>>> sentenceEndings = new ArrayList<>();
 
         for (List<String> subject: subjects) {
-            nGrams.add(getRelevantSentenceBeginnings(tokenizedSentences, subject));
+            sentenceStarts.add(getRelevantSentenceBeginnings(tokenizedSentences, subject));
+            sentenceEndings.add(getRelevantSentenceEndings(tokenizedSentences, subject));
         }
 
-        PythonDict db = new PythonDict();
+        SentencesDict db = new SentencesDict(subjects.size());
 
-        List<Integer> numberOfSamples = getNumberOfSamples(nGrams.stream().map(ArrayList::size).collect(Collectors.toList()), samplingMode);
+        List<Integer> numberOfSamples = getNumberOfSamples(sentenceStarts.stream().map(List::size).collect(Collectors.toList()), samplingMode);
         System.out.println("sampling to " + Arrays.toString(numberOfSamples.toArray()));
 
-        for (int n = 0; n < nGrams.size(); n++) {
+        for (int n = 0; n < sentenceStarts.size(); n++) {
             for (int i = 0; i < numberOfSamples.get(n); i++) {
-                db.add(nGrams.get(n).get(i % nGrams.get(n).size()), n);
+                db.add(sentenceStarts.get(n).get(i % sentenceStarts.get(n).size()),
+                       sentenceEndings.get(n).get(i % sentenceEndings.get(n).size()),
+                       n);
             }
         }
         return db;
@@ -116,15 +120,26 @@ public class SentenceDatabaseCreator {
         return sampleCounts;
     }
 
-    static ArrayList<NGram> getRelevantSentenceBeginnings(List<List<String>> tokenizedSentences, List<String> subjectTokens) {
-        ArrayList<NGram> nGrams;
-        nGrams = new ArrayList<>();
-
+    static List<List<String>> getRelevantSentenceBeginnings(List<List<String>> tokenizedSentences, List<String> subjectTokens) {
+        List<List<String>> nGrams = new ArrayList<>();
         final int subjectLength = subjectTokens.size();
         for (List<String> tokens : tokenizedSentences) {
             for (int i = 0; i <= tokens.size() - subjectLength; i++) {
                 if (tokens.subList(i, i + subjectLength).equals(subjectTokens)) {
-                    nGrams.add(new NGram(tokens.subList(0, i)));
+                    nGrams.add(tokens.subList(0, i));
+                }
+            }
+        }
+        return nGrams;
+    }
+
+    static List<List<String>> getRelevantSentenceEndings(List<List<String>> tokenizedSentences, List<String> subjectTokens) { // parameterize
+        List<List<String>> nGrams = new ArrayList<>();
+        final int subjectLength = subjectTokens.size();
+        for (List<String> tokens : tokenizedSentences) {
+            for (int i = 0; i <= tokens.size() - subjectLength; i++) {
+                if (tokens.subList(i, i + subjectLength).equals(subjectTokens)) {
+                    nGrams.add(tokens.subList(i + 1, tokens.size()));
                 }
             }
         }
