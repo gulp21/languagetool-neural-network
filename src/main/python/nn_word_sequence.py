@@ -15,7 +15,7 @@ from repl import get_probabilities
 
 class NeuralNetwork:
     def __init__(self, dictionary_path: str, embedding_path: str, training_data_file: str, test_data_file: str,
-                 batch_size: int=1000, epochs: int=1000, use_hidden_layer: bool=False, use_after: bool=True):
+                 batch_size: int=1000, epochs: int=1000, use_after: bool=True, keep_prob: float=1.0):
         print(locals())
 
         self.hidden_layer_size = 8
@@ -24,6 +24,7 @@ class NeuralNetwork:
         self.max_sequence_length = 30
         self.batch_size = batch_size
         self.epochs = epochs
+        self.keep_prob = keep_prob
 
         with open(dictionary_path) as dictionary_file:
             self.dictionary = literal_eval(dictionary_file.read())
@@ -53,7 +54,8 @@ class NeuralNetwork:
             self.y_ = tf.placeholder(tf.float32, shape=[None, self._num_outputs])
 
         with tf.name_scope('conv_layer'):
-            x_image = tf.reshape(self.x, [-1, input_length, self._embedding_size, 1])
+            self.dropout = tf.placeholder(tf.float32)
+            x_image = tf.reshape(tf.nn.dropout(self.x, self.dropout), [-1, input_length, self._embedding_size, 1])
             filter_size = 5
             self.W_conv1 = nn.weight_variable([filter_size, self._embedding_size, 1, self.num_conv_filters])
             self.b_conv1 = nn.bias_variable([self.num_conv_filters])
@@ -120,6 +122,7 @@ class NeuralNetwork:
         self.assign_sentences_to_batch(batch, tokens_before, tokens_after)
         batch[self.y_] = self._db["groundTruths"][start_index:end_index]
         self._current_batch_number = self._current_batch_number + 1
+        batch[self.dropout] = self.keep_prob
         # print("d" + str(len(batch[self.word1])))
         return batch
 
@@ -129,6 +132,7 @@ class NeuralNetwork:
         tokens_after = self._db["tokensAfter"][:]
         self.assign_sentences_to_batch(batch, tokens_before, tokens_after)
         batch[self.y_] = self._db["groundTruths"][:]
+        batch[self.dropout] = 1
         # print("d" + str(len(batch[self.word1])))
         return batch
 
@@ -172,7 +176,8 @@ class NeuralNetwork:
 
     def get_score(self, tokens_before, tokens_after):
         fd = {self.y_: [list(np.zeros(self._num_outputs))],
-              self.x: [np.concatenate([tokens_before, tokens_after])] if self.use_after else [tokens_before]}
+              self.x: [np.concatenate([tokens_before, tokens_after])] if self.use_after else [tokens_before],
+              self.dropout: 1}
         scores = self.y.eval(fd)[0]
         return scores
 
