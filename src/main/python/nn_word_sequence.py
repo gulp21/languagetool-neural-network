@@ -15,7 +15,7 @@ from repl import get_probabilities
 
 class NeuralNetwork:
     def __init__(self, dictionary_path: str, embedding_path: str, training_data_file: str, test_data_file: str,
-                 batch_size: int=1000, epochs: int=1000, use_after: bool=True, keep_prob: float=1.0):
+                 batch_size: int=1000, epochs: int=1000, use_after: bool=True, keep_prob: float=0.7):
         print(locals())
 
         self.hidden_layer_size = 8
@@ -47,8 +47,11 @@ class NeuralNetwork:
     def setup_net(self):
         input_length = self.max_sequence_length * (self.use_after + 1)
 
+        context_output_size = 4 * self._embedding_size
+
         with tf.name_scope('input'):
             self.x = tf.placeholder(tf.float32, [None, input_length * self._embedding_size])
+            self.x_context = tf.placeholder(tf.float32, [None, context_output_size])
 
         with tf.name_scope('ground-truth'):
             self.y_ = tf.placeholder(tf.float32, shape=[None, self._num_outputs])
@@ -64,9 +67,10 @@ class NeuralNetwork:
             h_pool1_flat = tf.reshape(h_pool1, [-1, self.num_conv_filters])
 
         with tf.name_scope('readout_layer'):
-            self.W_fc2 = nn.weight_variable([self.num_conv_filters, self._num_outputs])
+            self.W_fc2 = nn.weight_variable([self.num_conv_filters + context_output_size, self._num_outputs])
             self.b_fc2 = nn.bias_variable([self._num_outputs])
-            self.y = tf.matmul(h_pool1_flat, self.W_fc2) + self.b_fc2
+            fc2_input = tf.concat([h_pool1_flat, tf.nn.dropout(self.x_context, self.dropout)], axis=1)
+            self.y = tf.matmul(fc2_input, self.W_fc2) + self.b_fc2
 
         with tf.name_scope('train'):
             cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=self.y, labels=self.y_))
@@ -87,13 +91,15 @@ class NeuralNetwork:
         else:
             return self.embedding[self.dictionary["UNK"]]
 
-    def to_max_length_start(self, sentence: [str]):
+    @staticmethod
+    def take(sentence: [str], max_length: int):
         """keep first <=max_sequence_length words, fill rest with UNK"""
-        return (sentence + ["UNK"] * self.max_sequence_length)[:self.max_sequence_length]
+        return (sentence + ["UNK"] * max_length)[:max_length]
 
-    def to_max_length_end(self, sentence: [str]):
+    @staticmethod
+    def takeLast(sentence: [str], max_length: int):
         """keep last <=max_sequence_length words, fill rest with UNK"""
-        return (["UNK"] * self.max_sequence_length + sentence)[-self.max_sequence_length:]
+        return (["UNK"] * max_length + sentence)[-max_length:]
 
     def embed(self, words: [str]) -> np.ndarray:
         return np.array(list(map(lambda w: self.get_word_representation(w), words)))
@@ -101,10 +107,11 @@ class NeuralNetwork:
     def get_db(self, path):
         db = dict()
         raw_db = json.load(open(path))
-        db["tokensBefore"] = np.asarray(list(map(lambda ws: self.embed(self.to_max_length_end(ws)).flatten(), raw_db["tokensBefore"])))
-        db["tokensAfter"] = np.asarray(list(map(lambda ws: self.embed(self.to_max_length_start(ws)).flatten(), raw_db["tokensAfter"])))
+        db["tokensBefore"] = np.asarray(list(map(lambda ws: self.embed(self.takeLast(ws, self.max_sequence_length)).flatten(), raw_db["tokensBefore"])))
+        db["tokensAfter"] = np.asarray(list(map(lambda ws: self.embed(self.take(ws, self.max_sequence_length)).flatten(), raw_db["tokensAfter"])))
+        db["context"] = np.asarray(list(map(lambda b, a: self.embed(self.takeLast(b, 2) + self.take(a, 2)).flatten(), raw_db["tokensBefore"], raw_db["tokensAfter"])))
         db["groundTruths"] = raw_db["groundTruths"]
-        db["context_str"] = list(map(lambda b, a: " ".join(self.to_max_length_end(b)) + " … " + " ".join(self.to_max_length_start(a)), raw_db["tokensBefore"], raw_db["tokensAfter"]))
+        db["context_str"] = list(map(lambda b, a: " ".join(self.takeLast(b, self.max_sequence_length)) + " … " + " ".join(self.take(a, self.max_sequence_length)), raw_db["tokensBefore"], raw_db["tokensAfter"]))
         db["tokensBefore"], db["tokensAfter"], db["groundTruths"], db["context_str"] = \
             shuffle(db["tokensBefore"], db["tokensAfter"], db["groundTruths"], db["context_str"])
         print("%s loaded, containing %d entries, class distribution: %s"
@@ -119,7 +126,8 @@ class NeuralNetwork:
         batch = dict()
         tokens_before = self._db["tokensBefore"][start_index:end_index]
         tokens_after = self._db["tokensAfter"][start_index:end_index]
-        self.assign_sentences_to_batch(batch, tokens_before, tokens_after)
+        context = self._db["context"][start_index:end_index]
+        self.assign_sentences_to_batch(batch, tokens_before, tokens_after, context)
         batch[self.y_] = self._db["groundTruths"][start_index:end_index]
         self._current_batch_number = self._current_batch_number + 1
         batch[self.dropout] = self.keep_prob
@@ -130,17 +138,19 @@ class NeuralNetwork:
         batch = dict()
         tokens_before = self._db["tokensBefore"][:]
         tokens_after = self._db["tokensAfter"][:]
-        self.assign_sentences_to_batch(batch, tokens_before, tokens_after)
+        context = self._db["context"][:]
+        self.assign_sentences_to_batch(batch, tokens_before, tokens_after, context)
         batch[self.y_] = self._db["groundTruths"][:]
         batch[self.dropout] = 1
         # print("d" + str(len(batch[self.word1])))
         return batch
 
-    def assign_sentences_to_batch(self, batch, tokens_before, tokens_after):
+    def assign_sentences_to_batch(self, batch, tokens_before, tokens_after, context):
         if self.use_after:
             batch[self.x] = np.concatenate([tokens_before, tokens_after], axis=1)
         else:
             batch[self.x] = tokens_before
+        batch[self.x_context] = np.concatenate([context], axis=1)
 
     def train(self):
         steps = math.ceil(self._TRAINING_SAMPLES / self.batch_size)
@@ -167,16 +177,17 @@ class NeuralNetwork:
         np.savetxt(output_path + "/b_fc2.txt", self.b_fc2.eval())
         np.savetxt(output_path + "/W_fc2.txt", self.W_fc2.eval())
 
-    def get_suggestion(self, tokens_before, tokens_after, threshold=.5):
-        scores = self.get_score(tokens_before, tokens_after)
+    def get_suggestion(self, tokens_before, tokens_after, context, threshold=.5):
+        scores = self.get_score(tokens_before, tokens_after, context)
         if np.max(scores) > threshold and np.min(scores) < -threshold:
             return np.argmax(scores)
         else:
             return -1
 
-    def get_score(self, tokens_before, tokens_after):
+    def get_score(self, tokens_before, tokens_after, context):
         fd = {self.y_: [list(np.zeros(self._num_outputs))],
               self.x: [np.concatenate([tokens_before, tokens_after])] if self.use_after else [tokens_before],
+              self.x_context: [context],
               self.dropout: 1}
         scores = self.y.eval(fd)[0]
         return scores
@@ -193,7 +204,7 @@ class NeuralNetwork:
         fn = 0
 
         for i in range(len(self._db_validate["groundTruths"])):
-            suggestion = self.get_suggestion(self._db_validate["tokensBefore"][i], self._db_validate["tokensAfter"][i], threshold=threshold)
+            suggestion = self.get_suggestion(self._db_validate["tokensBefore"][i], self._db_validate["tokensAfter"][i], self._db_validate["context"][i], threshold=threshold)
             ground_truth = np.argmax(self._db_validate["groundTruths"][i])
             if suggestion == -1:
                 unclassified[ground_truth] = unclassified[ground_truth] + 1
@@ -242,9 +253,9 @@ class NeuralNetwork:
         fn = 0
 
         for i in range(len(self._db_validate["groundTruths"])):
-            scores = self.get_score(self._db_validate["tokensBefore"][i], self._db_validate["tokensAfter"][i])
+            scores = self.get_score(self._db_validate["tokensBefore"][i], self._db_validate["tokensAfter"][i], self._db_validate["context"][i])
             probabilities = get_probabilities(scores)
-            best_match = self.get_suggestion(self._db_validate["tokensBefore"][i], self._db_validate["tokensAfter"][i])
+            best_match = self.get_suggestion(self._db_validate["tokensBefore"][i], self._db_validate["tokensAfter"][i], self._db_validate["context"][i])
             best_match_score = scores[best_match]
             ground_truth = np.argmax(self._db_validate["groundTruths"][i])
             ground_truth_probability = probabilities[ground_truth]
