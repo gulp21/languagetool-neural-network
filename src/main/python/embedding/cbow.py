@@ -104,8 +104,10 @@ context_size = 2 * context_window
 valid_size = 16  # Random set of words to evaluate similarity on.
 valid_window = 100  # Only pick dev samples in the head of the distribution.
 valid_examples = np.random.choice(valid_window, valid_size, replace=False)
-valid_target_examples = [[dictionary["d"], dictionary["like"], dictionary["go"], dictionary["to"]],
-                         [dictionary[","], dictionary["and"], dictionary["we"], dictionary["will"]]]
+# valid_target_examples = [[dictionary["d"], dictionary["like"], dictionary["go"], dictionary["to"]],
+#                          [dictionary[","], dictionary["and"], dictionary["we"], dictionary["will"]]]
+valid_target_examples = [[dictionary["wir"], dictionary["sind"], dictionary["Großen"], dictionary["und"]],
+                         [dictionary["es"], dictionary["ist"], dictionary["zu"], dictionary["sehen"]]]
 num_sampled = 64  # Number of negative examples to sample.
 
 graph = tf.Graph()
@@ -123,10 +125,10 @@ with graph.as_default():
         embeddings = tf.Variable(tf.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0))
         embed = tf.nn.embedding_lookup(embeddings, train_inputs)
         # take mean of embeddings of context words for context embedding
-        embed_context = tf.reduce_mean(embed, 1)
+        embed_context = tf.reshape(embed, [batch_size, embedding_size * context_size])
 
         # Construct the variables for the NCE loss
-        nce_weights = tf.Variable(tf.truncated_normal([vocabulary_size, embedding_size], stddev=1.0 / math.sqrt(embedding_size)))
+        nce_weights = tf.Variable(tf.truncated_normal([vocabulary_size, embedding_size * context_size], stddev=1.0 / math.sqrt(embedding_size)))
         nce_biases = tf.Variable(tf.zeros([vocabulary_size]))
 
     # Compute the average NCE loss for the batch.
@@ -143,7 +145,7 @@ with graph.as_default():
     valid_embeddings = tf.nn.embedding_lookup(normalized_embeddings, valid_dataset)
     similarity = tf.matmul(valid_embeddings, normalized_embeddings, transpose_b=True)
 
-    valid_target_probabilities = tf.matmul(tf.reduce_mean(tf.nn.embedding_lookup(embeddings, valid_target_dataset), 1), nce_weights, transpose_b=True) + nce_biases
+    valid_target_probabilities = tf.matmul(tf.reshape(tf.nn.embedding_lookup(embeddings, valid_target_dataset), [len(valid_target_examples), embedding_size * context_size]), nce_weights, transpose_b=True) + nce_biases
 
     # Add variable initializer.
     init = tf.initialize_all_variables()
