@@ -24,6 +24,12 @@ task createNGramDatabase(type:JavaExec) {
     maxHeapSize = "10000m"
 }
 
+task pythonGateway(type:JavaExec) {
+    main = "de.hhu.mabre.languagetool.PythonGateway"
+    classpath = sourceSets.main.runtimeClasspath
+    maxHeapSize = "10000m"
+}
+
 repositories {
     jcenter()
     mavenCentral()
@@ -33,6 +39,7 @@ dependencies {
     compile 'org.languagetool:languagetool-core:3.9'
     compile 'org.languagetool:language-all:3.9'
     compile 'com.google.code.gson:gson:2.8.2'
+    compile 'net.sf.py4j:py4j:0.10.6'
     testCompile 'junit:junit:3.8.2'
     testCompile 'junit:junit:4.12'
 }

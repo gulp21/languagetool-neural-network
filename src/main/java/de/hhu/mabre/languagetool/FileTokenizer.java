@@ -51,7 +51,7 @@ public class FileTokenizer {
         }
     }
 
-    static List<String> tokenize(String languageCode, String text) {
+    public static List<String> tokenize(String languageCode, String text) {
         System.out.println("Tokenizing");
         Tokenizer tokenizer = getTokenizer(languageCode);
         return tokenize(tokenizer, text);
@@ -67,7 +67,7 @@ public class FileTokenizer {
         return language.getWordTokenizer();
     }
 
-    static List<List<String>> tokenizedSentences(String languageCode, String text) {
+    public static List<List<String>> tokenizedSentences(String languageCode, String text) {
         Language language = getLanguageForShortCode(languageCode);
         SentenceTokenizer sentenceTokenizer = language.getSentenceTokenizer();
         List<String> sentences = sentenceTokenizer.tokenize(text);
