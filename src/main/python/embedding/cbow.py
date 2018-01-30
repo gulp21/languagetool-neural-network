@@ -15,6 +15,7 @@ import tensorflow as tf
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
 # Step 1: Download the data.
+from embedding.common import build_dataset
 
 filename = "/tmp/c-tokens"
 
@@ -31,32 +32,9 @@ words = read_data(filename)
 print('Data size', len(words))
 
 # Step 2: Build the dictionary and replace rare words with UNK token.
-vocabulary_size = 20000
-
-
-def build_dataset(words):
-    count = [['UNK', -1]]
-    counter = collections.Counter(words)
-    print("unique words", len(counter))
-    count.extend(counter.most_common(vocabulary_size - 1))
-    dictionary = dict()
-    for word, _ in count:
-        dictionary[word] = len(dictionary)
-    data = list()
-    unk_count = 0
-    for word in words:
-        if word in dictionary:
-            index = dictionary[word]
-        else:
-            index = 0  # dictionary['UNK']
-            unk_count += 1
-        data.append(index)
-    count[0][1] = unk_count
-    reverse_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
-    return data, count, dictionary, reverse_dictionary
-
 
 data, count, dictionary, reverse_dictionary = build_dataset(words)
+vocabulary_size = len(dictionary)
 del words  # Hint to reduce memory.
 print('Most common words (+UNK)', count[:5])
 print('Sample data', data[:10], [reverse_dictionary[i] for i in data[:10]])
