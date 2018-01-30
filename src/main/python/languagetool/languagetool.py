@@ -7,6 +7,10 @@ from py4j.protocol import Py4JNetworkError
 
 class LanguageTool:
 
+    tagsets = {
+        "en": [None, '$', "''", ',', '.', ':', 'CC', 'CD', 'DT', 'EX', 'IN', 'JJ', 'JJR', 'JJS', 'MD', 'NN', 'NN:U', 'NN:UN', 'NNP', 'NNPS', 'NNS', 'PDT', 'POS', 'PRP', 'PRP$', 'RB', 'RBR', 'RBS', 'RP', 'TO', 'UH', 'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ', 'WDT', 'WP', 'WP$', 'WRB', '``']
+    }
+
     def __init__(self, languageCode):
         """
         Parameters
@@ -17,6 +21,7 @@ class LanguageTool:
             self.gateway = JavaGateway()
             self.languageCode = languageCode
             self.language = self.gateway.jvm.org.languagetool.Languages.getLanguageForShortCode(languageCode)
+            self.tagger = self.language.getTagger()
         except Py4JNetworkError as e:
             raise RuntimeError("Could not connect to JVM. Is ./gradlew pythonGateway running?") from e
 
@@ -44,4 +49,14 @@ class LanguageTool:
             tokens = ListConverter().convert(tokenizedSentences, self.gateway._gateway_client)
         else:
             tokens = tokenizedSentences
-        return list(zip(tokens, map(LanguageTool._get_tags_of_tagged_tokens, self.language.getTagger().tag(tokens))))
+        return list(zip(tokens, map(LanguageTool._get_tags_of_tagged_tokens, self.tagger.tag(tokens))))
+
+    def tag_token(self, token: str) -> [str]:
+        """
+        Tag a single token using the tagger of a language. All valid tags for the token are returned.
+        """
+        tokens = ListConverter().convert([token], self.gateway._gateway_client)
+        return LanguageTool._get_tags_of_tagged_tokens(self.tagger.tag(tokens)[0])
+
+    def tagset(self):
+        return LanguageTool.tagsets[self.language.getShortCode()]
