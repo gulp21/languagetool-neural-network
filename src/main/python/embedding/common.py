@@ -4,9 +4,9 @@ from languagetool.languagetool import LanguageTool
 
 
 def read_data(lt: LanguageTool, filename: str) -> [str]:
-    """Extract the first file enclosed in a zip file as a list of words"""
+    """Read tokens from tokenized file"""
     with open(filename) as f:
-        data = lt.tokenize(f.read())
+        data = f.read().split()
     return data
 
 
