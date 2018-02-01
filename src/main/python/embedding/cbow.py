@@ -19,7 +19,7 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 from embedding.common import build_dataset, read_data
 from languagetool.languagetool import LanguageTool
 
-print(sys.argv)
+print(sys.argv, flush=True)
 
 if len(sys.argv) != 6:
     print("Parameters: training-file language-code vocabulary-size output-dir")
@@ -35,7 +35,7 @@ outdir = sys.argv[5]
 
 # Read the data into a list of strings.
 words = read_data(lt, filename)
-print('number of tokens in input file:', len(words))
+print('number of tokens in input file:', len(words), flush=True)
 
 # Step 2: Build the dictionary and replace rare words with UNK token.
 
@@ -44,7 +44,7 @@ del words  # Hint to reduce memory.
 vocabulary_size = len(dictionary)
 print('vocabulary size', vocabulary_size)
 print('Most common words (+UNK)', count[:5])
-print('Sample data', data[:10], [reverse_dictionary[i] for i in data[:10]])
+print('Sample data', data[:10], [reverse_dictionary[i] for i in data[:10]], flush=True)
 
 data_index = 0
 
@@ -136,7 +136,7 @@ with graph.as_default():
     init = tf.initialize_all_variables()
 
 # Step 5: Begin training.
-print("steps", num_steps)
+print("steps", num_steps, flush=True)
 
 with tf.Session(graph=graph) as session:
     # We must initialize all variables before we use them.
@@ -157,7 +157,7 @@ with tf.Session(graph=graph) as session:
             if step > 0:
                 average_loss /= 2000
             # The average loss is an estimate of the loss over the last 2000 batches.
-            print("Average loss at step ", step, ": ", average_loss)
+            print("Average loss at step ", step, ": ", average_loss, flush=True)
             average_loss = 0
 
         # Note that this is expensive (~20% slowdown if computed every 500 steps)
