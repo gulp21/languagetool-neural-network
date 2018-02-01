@@ -10,16 +10,18 @@ import collections
 import json
 import math
 import sys
+import logging
 
 import numpy as np
 import tensorflow as tf
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
-# Step 1: Download the data.
 from embedding.common import build_dataset, read_data
 from languagetool.languagetool import LanguageTool
 
-print(sys.argv, flush=True)
+logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', level=logging.DEBUG, stream=sys.stdout)
+
+logging.info(sys.argv)
 
 if len(sys.argv) != 6:
     print("Parameters: training-file language-code vocabulary-size output-dir")
@@ -35,16 +37,16 @@ outdir = sys.argv[5]
 
 # Read the data into a list of strings.
 words = read_data(filename)
-print('number of tokens in input file:', len(words), flush=True)
+logging.info('number of tokens in input file:', len(words), flush=True)
 
 # Step 2: Build the dictionary and replace rare words with UNK token.
 
 data, count, dictionary, reverse_dictionary = build_dataset(words, max_words_in_vocabulary, lt.tag_token)
 del words  # Hint to reduce memory.
 vocabulary_size = len(dictionary)
-print('vocabulary size', vocabulary_size)
-print('Most common words (+UNK)', count[:5])
-print('Sample data', data[:10], [reverse_dictionary[i] for i in data[:10]], flush=True)
+logging.info('vocabulary size', vocabulary_size)
+logging.info('Most common words (+UNK)', count[:5])
+logging.info('Sample data', data[:10], [reverse_dictionary[i] for i in data[:10]], flush=True)
 
 data_index = 0
 
@@ -136,12 +138,12 @@ with graph.as_default():
     init = tf.initialize_all_variables()
 
 # Step 5: Begin training.
-print("steps", num_steps, flush=True)
+logging.info("steps", num_steps, flush=True)
 
 with tf.Session(graph=graph) as session:
     # We must initialize all variables before we use them.
     init.run()
-    print("Initialized")
+    logging.info("Initialized")
 
     average_loss = 0
     for step in xrange(num_steps):
@@ -171,7 +173,7 @@ with tf.Session(graph=graph) as session:
                 for k in xrange(top_k):
                     close_word = reverse_dictionary[nearest[k]]
                     log_str = "%s %s," % (log_str, close_word)
-                print(log_str)
+                    logging.info(log_str)
 
             pss = valid_target_probabilities.eval()
             for context, ps in zip(valid_target_examples, pss):
@@ -179,7 +181,7 @@ with tf.Session(graph=graph) as session:
                 nearest = (-ps).argsort()[1:top_k + 1]
                 context_words = list(map(lambda w: reverse_dictionary[w], context))
                 nearest_words = list(map(lambda w: reverse_dictionary[w], nearest))
-                print("Nearest to %s: %s" % (str(context_words), str(nearest_words)))
+                logging.info("Nearest to %s: %s" % (str(context_words), str(nearest_words)))
 
 
     final_embeddings = normalized_embeddings.eval()
@@ -218,4 +220,4 @@ try:
     plot_with_labels(low_dim_embs, labels)
 
 except ImportError:
-    print("Please install sklearn and matplotlib to visualize embeddings.")
+    logging.warn("Please install sklearn and matplotlib to visualize embeddings.")

@@ -1,4 +1,5 @@
 import collections
+import logging
 
 from languagetool.languagetool import LanguageTool
 
@@ -13,11 +14,12 @@ def read_data(filename: str) -> [str]:
 def build_dataset(words, max_words_in_vocabulary: int=20000, pos_tagger=None):
     count = [['UNK', -1]]
     counter = collections.Counter(words)
-    print("unique words", len(counter))
+    logging.info("unique words", len(counter))
     most_common_counter = counter.most_common(max_words_in_vocabulary - 1)
     if pos_tagger is not None:
         vocabulary = {token for token, _ in most_common_counter}
         words_and_tags = []
+        logging.info("tagging words")
         for word in words:
             if word not in vocabulary:
                 words_and_tags.append(str(pos_tagger(word)))
@@ -29,6 +31,7 @@ def build_dataset(words, max_words_in_vocabulary: int=20000, pos_tagger=None):
         count.extend(most_common_counter)
         words_and_tags = words
     dictionary = dict()
+    logging.info("Buildings dictionary")
     for word, _ in count:
         dictionary[word] = len(dictionary)
     data = list()
