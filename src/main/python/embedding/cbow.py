@@ -9,6 +9,7 @@ from __future__ import print_function
 import collections
 import json
 import math
+import sys
 
 import numpy as np
 import tensorflow as tf
@@ -18,9 +19,18 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 from embedding.common import build_dataset, read_data
 from languagetool.languagetool import LanguageTool
 
-filename = "/tmp/c"
-lt = LanguageTool("de-DE")
-max_words_in_vocabulary = 20000
+print(sys.argv)
+
+if len(sys.argv) != 6:
+    print("Parameters: training-file language-code vocabulary-size output-dir")
+    print("Example: /tmp/c de-DE 50000 20000 /tmp")
+    sys.exit(1)
+
+filename = sys.argv[1]
+lt = LanguageTool(sys.argv[2])
+max_words_in_vocabulary = int(sys.argv[3])
+num_steps = int(sys.argv[4]) + 1
+outdir = sys.argv[5]
 
 
 # Read the data into a list of strings.
@@ -126,7 +136,7 @@ with graph.as_default():
     init = tf.initialize_all_variables()
 
 # Step 5: Begin training.
-num_steps = 200001
+print("steps", num_steps)
 
 with tf.Session(graph=graph) as session:
     # We must initialize all variables before we use them.
@@ -174,10 +184,10 @@ with tf.Session(graph=graph) as session:
 
     final_embeddings = normalized_embeddings.eval()
 
-    json.dump(dictionary, open("/tmp/dictionary.json", "w"))
-    np.savetxt("/tmp/embeddings.txt", embeddings.eval())
-    np.savetxt("/tmp/nce_weights.txt", nce_weights.eval())
-    np.savetxt("/tmp/nce_biases.txt", nce_biases.eval())
+    json.dump(dictionary, open(outdir + "/dictionary.json", "w"))
+    np.savetxt(outdir + "/embeddings.txt", embeddings.eval())
+    np.savetxt(outdir + "/nce_weights.txt", nce_weights.eval())
+    np.savetxt(outdir + "/nce_biases.txt", nce_biases.eval())
 
 # Step 6: Visualize the embeddings.
 
