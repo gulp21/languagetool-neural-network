@@ -1,17 +1,39 @@
 import collections
 
+from languagetool.languagetool import LanguageTool
+
+
+def read_data(lt: LanguageTool, filename: str) -> [str]:
+    """Extract the first file enclosed in a zip file as a list of words"""
+    with open(filename) as f:
+        data = lt.tokenize(f.read())
+    return data
+
 
 def build_dataset(words, max_words_in_vocabulary: int=20000, pos_tagger=None):
     count = [['UNK', -1]]
     counter = collections.Counter(words)
     print("unique words", len(counter))
-    count.extend(counter.most_common(max_words_in_vocabulary - 1))
+    most_common_counter = counter.most_common(max_words_in_vocabulary - 1)
+    if pos_tagger is not None:
+        vocabulary = {token for token, _ in most_common_counter}
+        words_and_tags = []
+        for word in words:
+            if word not in vocabulary:
+                words_and_tags.append(str(pos_tagger(word)))
+            else:
+                words_and_tags.append(word)
+        tagged_counter = collections.Counter(words_and_tags).most_common()
+        count.extend(tagged_counter)
+    else:
+        count.extend(most_common_counter)
+        words_and_tags = words
     dictionary = dict()
     for word, _ in count:
         dictionary[word] = len(dictionary)
     data = list()
     unk_count = 0
-    for word in words:
+    for word in words_and_tags:
         if word in dictionary:
             index = dictionary[word]
         else:

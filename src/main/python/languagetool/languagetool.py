@@ -1,6 +1,6 @@
 from typing import Union, Iterable
 
-from py4j.java_gateway import JavaGateway, JavaObject
+from py4j.java_gateway import JavaGateway, JavaObject, GatewayParameters
 from py4j.java_collections import JavaList, ListConverter
 from py4j.protocol import Py4JNetworkError
 
@@ -18,7 +18,7 @@ class LanguageTool:
         languageCode: code like "de-DE" or "en"
         """
         try:
-            self.gateway = JavaGateway()
+            self.gateway = JavaGateway(gateway_parameters=GatewayParameters(auto_convert=True))
             self.languageCode = languageCode
             self.language = self.gateway.jvm.org.languagetool.Languages.getLanguageForShortCode(languageCode)
             self.tagger = self.language.getTagger()
@@ -31,11 +31,11 @@ class LanguageTool:
         """
         return self.gateway.jvm.de.hhu.mabre.languagetool.FileTokenizer.tokenizedSentences(self.languageCode, sentences)
 
-    def tokenize(self, sentences: str) -> JavaList:
+    def tokenize(self, sentences: str) -> [str]:
         """
         Tokenize one or several sentences using LanguageTool.
         """
-        return self.gateway.jvm.de.hhu.mabre.languagetool.FileTokenizer.tokenize(self.languageCode, sentences)
+        return list(self.gateway.jvm.de.hhu.mabre.languagetool.FileTokenizer.tokenize(self.languageCode, sentences))
 
     @staticmethod
     def _get_tags_of_tagged_tokens(taggedToken: JavaObject):
@@ -56,7 +56,10 @@ class LanguageTool:
         Tag a single token using the tagger of a language. All valid tags for the token are returned.
         """
         tokens = ListConverter().convert([token], self.gateway._gateway_client)
-        return LanguageTool._get_tags_of_tagged_tokens(self.tagger.tag(tokens)[0])
+        tags = list(set(LanguageTool._get_tags_of_tagged_tokens(self.tagger.tag(tokens)[0])))
+        tags.sort()  # hm, "Zusammenhänge" gets tags more than once
+        return tags
+
 
     def tagset(self):
         return LanguageTool.tagsets[self.language.getShortCode()]

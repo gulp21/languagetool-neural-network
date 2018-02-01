@@ -2,8 +2,15 @@ import json
 
 import numpy as np
 
+from languagetool.languagetool import LanguageTool
+
 # base_path = "/home/markus/Dokumente/GitHub/projektarbeit/lt/languagetool-neural-network/res/cbow/eng_ordered/" #"/home/markus/Dokumente/GitHub/projektarbeit/lt/languagetool-neural-network/res/cbow/eng/"
-base_path = "/home/markus/Dokumente/GitHub/projektarbeit/lt/languagetool-neural-network/res/cbow/deu_ordered/" #"/home/markus/Dokumente/GitHub/projektarbeit/lt/languagetool-neural-network/res/cbow/eng/"
+# base_path = "/home/markus/Dokumente/GitHub/projektarbeit/lt/languagetool-neural-network/res/cbow/deu_ordered/" #"/home/markus/Dokumente/GitHub/projektarbeit/lt/languagetool-neural-network/res/cbow/eng/"
+# fallback = lambda _: "UNK"
+base_path = "/home/markus/Dokumente/GitHub/projektarbeit/lt/languagetool-neural-network/res/cbow/deu_pos/"
+fallback = lambda token: str(lt.tag_token(token))
+
+lt = LanguageTool("de-DE")
 
 dictionary = json.load(open(base_path + "dictionary.json"))
 inverse_dictionary = {i: w for w, i in dictionary.items()}
@@ -28,7 +35,20 @@ def best_fits_for_context(context: [str], candidates: [str]) -> [(float, str)]:
 
 
 def get_embedding_indices(candidates):
-    return list(map(lambda w: dictionary[w] if w in dictionary else dictionary["UNK"], candidates))
+    return list(map(lambda token: safe_get(dictionary, token), candidates))
+
+
+def safe_get(dictionary: dict, token: str) -> str:
+    if token in dictionary:
+        return dictionary[token]
+    else:
+        fallback_token = fallback(token)
+        if fallback_token in dictionary:
+            # print("POS lookup", token)
+            return dictionary[fallback_token]
+        else:
+            # print("UNK", token)
+            return dictionary["UNK"]
 
 
 def best_fits_with_offsetting(tokenized_sentence: [str], candidates: [str]) -> [(float, str)]:
@@ -93,6 +113,7 @@ def evaluate_text(tokenized_sentences: [str], candidates: [str], threshold: floa
                     error_detection_fp[best_fit] += 1
                 print("false positive", best_fit, sentence)
                 print_measures(error_detection_tp, error_detection_fp, error_detection_tn, error_detection_fn)
+    print_measures(error_detection_tp, error_detection_fp, error_detection_tn, error_detection_fn)
     return tp / (tp + fp)
 
 
