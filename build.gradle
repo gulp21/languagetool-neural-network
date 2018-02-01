@@ -5,7 +5,7 @@ task tokenizeFile(type:JavaExec) {
     main = "de.hhu.mabre.languagetool.FileTokenizer"
     classpath = sourceSets.main.runtimeClasspath
     args "${-> languageCode}", "${-> sentencesFile}"
-    maxHeapSize = "2048m"
+    maxHeapSize = "19000m"
 }
 
 task createNGramDatabase(type:JavaExec) {
