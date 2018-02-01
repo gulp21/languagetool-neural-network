@@ -14,12 +14,12 @@ from repl import get_probabilities
 
 class NeuralNetwork:
     def __init__(self, dictionary_path: str, embedding_path: str, training_data_file: str, test_data_file: str,
-                 batch_size: int=1000, epochs: int=900, use_hidden_layer: bool=False, use_conv_layer: bool=False):
+                 batch_size: int=1000, epochs: int=1000, use_hidden_layer: bool=False, use_conv_layer: bool=False):
         print(locals())
 
         self.use_hidden_layer = use_hidden_layer
         self.use_conv_layer = use_conv_layer
-        self.hidden_layer_size = 8
+        self.hidden_layer_size = 32
         self.num_conv_filters = 32
         self.batch_size = batch_size
         self.epochs = epochs
@@ -148,7 +148,7 @@ class NeuralNetwork:
             for i in range(steps):
                 fd = self.get_batch()
                 _ = self.sess.run([self.train_step], fd)  # train with next batch
-            if e % 10 == 0:
+            if e % 1 == 0:
                 self._print_accuracy(e)
             if e % 1000 == 0:
                 print("--- VALIDATION PERFORMANCE -")
@@ -229,7 +229,7 @@ class NeuralNetwork:
                 fp = fp + 1
                 fn = fn + 1
 
-        accuracy = list(map(lambda c, i: c/(c+i), correct, incorrect))
+        accuracy = list(map(lambda c, i: c/(c+i) if (c+i) > 0 else np.nan, correct, incorrect))
         total_accuracy = list(map(lambda c, i, u: c/(c+i+u), correct, incorrect, unclassified))
 
         print("correct:", correct)
@@ -317,11 +317,12 @@ def main():
     network = NeuralNetwork(dictionary_path, embedding_path, training_data_file, test_data_file)
     network.train()
     network.save_weights(output_path)
-    network.validate(verbose=False, threshold=.5)
+    network.validate(verbose=True, threshold=.5)
+    network.validate(verbose=False, threshold=1)
     network.validate_error_detection(verbose=False, suggestion_threshold=.5, error_threshold=.5)
     network.validate_error_detection(verbose=False, suggestion_threshold=.5, error_threshold=.4)
     network.validate_error_detection(verbose=False, suggestion_threshold=.5, error_threshold=.3)
-    network.validate_error_detection(verbose=True, suggestion_threshold=.5, error_threshold=.2)
+    network.validate_error_detection(verbose=False, suggestion_threshold=.5, error_threshold=.2)
 
 
 if __name__ == '__main__':
