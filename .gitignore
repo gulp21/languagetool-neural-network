@@ -24,4 +24,7 @@ pom.xml.asc
 __pycache__
 .ipynb_checkpoints
 .gradle
+*bash.o*
+*bash.e*
+job*_*_*bash
 *log
