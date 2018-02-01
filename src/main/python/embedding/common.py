@@ -3,7 +3,7 @@ import collections
 from languagetool.languagetool import LanguageTool
 
 
-def read_data(lt: LanguageTool, filename: str) -> [str]:
+def read_data(filename: str) -> [str]:
     """Read tokens from tokenized file"""
     with open(filename) as f:
         data = f.read().split()

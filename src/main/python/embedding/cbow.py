@@ -34,7 +34,7 @@ outdir = sys.argv[5]
 
 
 # Read the data into a list of strings.
-words = read_data(lt, filename)
+words = read_data(filename)
 print('number of tokens in input file:', len(words), flush=True)
 
 # Step 2: Build the dictionary and replace rare words with UNK token.
