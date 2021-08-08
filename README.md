@@ -5,7 +5,7 @@
 # For Users of LanguageTool
 
 * Make sure you are using [LanguageTool](https://languagetool.org) version 4.0 or later.
-* Download the language data from [here](https://fscs.hhu.de/languagetool/word2vec.tar.gz) and extract the archive to a directory.
+* Download the language data from [here](https://languagetool.org/download/word2vec/) and extract the archive to a directory.
 * In the LanguageTool settings, choose that directory (which contains the subfolders “de”, “en” etc.) in “word2vec data directory”.
 * If you are using a LanguageTool server, set `word2vecDir` in your `languagetool.cfg` (by default located at `~/.languagetool.cfg` in Linux).
 
